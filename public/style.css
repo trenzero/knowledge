@@ -373,3 +373,48 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-color);
 }
+/* 添加到现有的样式文件中 */
+
+.category-count {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+.category-item.active .category-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.tag.active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* 加载状态 */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* 错误状态 */
+.error-message {
+    background-color: var(--error-color);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* 成功状态 */
+.success-message {
+    background-color: var(--success-color);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
