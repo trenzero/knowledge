@@ -1,97 +1,16 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人知识库</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a1a1a"/>
-</head>
-<body>
-    <div class="app-container">
-        <!-- 侧边栏 -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>知识库</h1>
-                <button class="btn-primary" id="newArticleBtn">新建文章</button>
-            </div>
-            
-            <!-- 搜索框 -->
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜索文章...">
-            </div>
-            
-            <!-- 分类树 -->
-            <div class="categories-section">
-                <h3>分类</h3>
-                <div id="categoriesTree"></div>
-                <button class="btn-secondary" id="newCategoryBtn">新建分类</button>
-            </div>
-            
-            <!-- 标签云 -->
-            <div class="tags-section">
-                <h3>标签</h3>
-                <div id="tagsCloud"></div>
-            </div>
-            
-            <!-- 数据管理 -->
-            <div class="data-management">
-                <button class="btn-secondary" id="exportBtn">导出数据</button>
-                <button class="btn-secondary" id="importBtn">导入数据</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;">
-            </div>
-        </div>
-
-        <!-- 主内容区 -->
-        <div class="main-content">
-            <div class="content-header">
-                <h2 id="contentTitle">所有文章</h2>
-                <div class="header-actions">
-                    <button class="btn-secondary" id="toggleDarkMode">切换主题</button>
-                </div>
-            </div>
-            
-            <!-- 文章列表 -->
-            <div class="articles-list" id="articlesList">
-                <div class="empty-state">
-                    <p>选择分类或标签查看文章，或创建新文章</p>
-                </div>
-            </div>
-            
-            <!-- 文章编辑器 -->
-            <div class="article-editor" id="articleEditor" style="display: none;">
-                <div class="editor-header">
-                    <input type="text" id="articleTitle" placeholder="文章标题">
-                    <div class="editor-actions">
-                        <select id="articleCategory">
-                            <option value="">选择分类</option>
-                        </select>
-                        <input type="text" id="articleTags" placeholder="标签（用逗号分隔）">
-                        <button class="btn-primary" id="saveArticleBtn">保存</button>
-                        <button class="btn-secondary" id="cancelEditBtn">取消</button>
-                    </div>
-                </div>
-                <textarea id="articleContent" placeholder="在此输入文章内容..."></textarea>
-            </div>
+<!-- 在现有模态框后面添加 -->
+<div class="modal" id="editCategoryModal" style="display: none;">
+    <div class="modal-content">
+        <h3>编辑分类</h3>
+        <input type="hidden" id="editCategoryId">
+        <input type="text" id="editCategoryName" placeholder="分类名称">
+        <select id="editCategoryParent">
+            <option value="">无父分类（顶级分类）</option>
+        </select>
+        <div class="modal-actions">
+            <button class="btn-primary" id="updateCategoryBtn">更新</button>
+            <button class="btn-danger" id="deleteCategoryBtn">删除</button>
+            <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
         </div>
     </div>
-
-    <!-- 分类编辑模态框 -->
-    <div class="modal" id="categoryModal" style="display: none;">
-        <div class="modal-content">
-            <h3 id="categoryModalTitle">新建分类</h3>
-            <input type="text" id="categoryName" placeholder="分类名称">
-            <select id="categoryParent">
-                <option value="">无父分类（顶级分类）</option>
-            </select>
-            <div class="modal-actions">
-                <button class="btn-primary" id="saveCategoryBtn">保存</button>
-                <button class="btn-secondary" id="cancelCategoryBtn">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-</html>
+</div>
