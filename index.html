@@ -9,7 +9,7 @@
     <!-- PWA 配置 -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1a202c">
-    <link rel="icon" href="/icons/icon-192x192.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
     
     <style>
         :root {
@@ -22,6 +22,9 @@
             --success-color: #48bb78;
             --warning-color: #ed8936;
             --error-color: #f56565;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
         }
 
         [data-theme="light"] {
@@ -39,10 +42,12 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
+            min-height: 100vh;
+            transition: var(--transition);
         }
 
         .container {
@@ -58,6 +63,8 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
         }
 
         .nav-content {
@@ -70,22 +77,28 @@
             font-size: 1.5rem;
             font-weight: bold;
             color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             align-items: center;
         }
 
         .nav-links a {
             color: var(--text-secondary);
             text-decoration: none;
-            transition: color 0.3s;
+            transition: var(--transition);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--border-radius);
         }
 
         .nav-links a:hover {
             color: var(--accent-color);
+            background-color: var(--bg-tertiary);
         }
 
         .theme-toggle {
@@ -94,6 +107,13 @@
             color: var(--text-secondary);
             cursor: pointer;
             font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-tertiary);
         }
 
         /* 主内容区 */
@@ -113,27 +133,37 @@
         /* 卡片组件 */
         .card {
             background-color: var(--bg-secondary);
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .card-header {
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* 表单样式 */
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
         }
 
         .form-label {
             display: block;
             margin-bottom: 0.5rem;
             color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .form-input,
@@ -143,23 +173,43 @@
             padding: 0.75rem;
             background-color: var(--bg-primary);
             border: 1px solid var(--bg-tertiary);
-            border-radius: 4px;
+            border-radius: var(--border-radius);
             color: var(--text-primary);
             font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
 
         .form-textarea {
             min-height: 200px;
             resize: vertical;
+            font-family: inherit;
         }
 
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 4px;
+            border-radius: var(--border-radius);
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: var(--transition);
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .btn-primary {
@@ -167,8 +217,8 @@
             color: white;
         }
 
-        .btn-primary:hover {
-            opacity: 0.9;
+        .btn-primary:hover:not(:disabled) {
+            background-color: #3182ce;
         }
 
         .btn-success {
@@ -176,37 +226,78 @@
             color: white;
         }
 
+        .btn-success:hover:not(:disabled) {
+            background-color: #38a169;
+        }
+
         .btn-warning {
             background-color: var(--warning-color);
             color: white;
         }
 
+        .btn-warning:hover:not(:disabled) {
+            background-color: #dd6b20;
+        }
+
+        .btn-error {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .btn-error:hover:not(:disabled) {
+            background-color: #e53e3e;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         /* 文章列表 */
         .article-list {
             display: grid;
-            gap: 1rem;
+            gap: 1.25rem;
         }
 
         .article-item {
             background-color: var(--bg-secondary);
             padding: 1.5rem;
-            border-radius: 8px;
-            transition: transform 0.3s;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            cursor: pointer;
+            border-left: 3px solid transparent;
         }
 
         .article-item:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            border-left-color: var(--accent-color);
         }
 
         .article-title {
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
 
         .article-meta {
             color: var(--text-secondary);
             font-size: 0.875rem;
             margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .article-content-preview {
@@ -218,6 +309,20 @@
             overflow: hidden;
         }
 
+        .article-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+        }
+
         /* AI 助手面板 */
         .ai-panel {
             position: fixed;
@@ -226,20 +331,20 @@
             width: 400px;
             max-height: 600px;
             background-color: var(--bg-secondary);
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             display: none;
             flex-direction: column;
             z-index: 1000;
+            overflow: hidden;
         }
 
         .ai-panel-header {
             padding: 1rem;
             background-color: var(--accent-color);
             color: white;
-            border-radius: 8px 8px 0 0;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
         }
 
@@ -247,6 +352,28 @@
             padding: 1rem;
             flex-grow: 1;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 450px;
+        }
+
+        .ai-message {
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            max-width: 85%;
+        }
+
+        .ai-message.user {
+            background-color: var(--accent-color);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .ai-message.assistant {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            align-self: flex-start;
         }
 
         .ai-panel-input {
@@ -270,6 +397,14 @@
             font-size: 1.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             z-index: 1001;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-toggle:hover {
+            transform: scale(1.05);
         }
 
         /* 登录页面 */
@@ -282,6 +417,9 @@
         .auth-tabs {
             display: flex;
             margin-bottom: 2rem;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background-color: var(--bg-secondary);
         }
 
         .auth-tab {
@@ -292,6 +430,7 @@
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
+            transition: var(--transition);
         }
 
         .auth-tab.active {
@@ -299,15 +438,23 @@
             color: white;
         }
 
-        .hidden {
+        .auth-form {
             display: none;
+        }
+
+        .auth-form.active {
+            display: block;
         }
 
         /* 管理面板 */
         .admin-panel {
             background-color: var(--bg-secondary);
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             padding: 2rem;
+        }
+
+        .admin-section {
+            margin-bottom: 2rem;
         }
 
         .user-list {
@@ -321,12 +468,186 @@
             align-items: center;
             padding: 1rem;
             background-color: var(--bg-primary);
-            border-radius: 4px;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .user-email {
+            font-weight: 500;
+        }
+
+        .user-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
         }
 
         .user-actions {
             display: flex;
             gap: 0.5rem;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 工具类 */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+
+        .flex {
+            display: flex;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+
+        .w-full {
+            width: 100%;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 640px) {
+            .nav-links {
+                gap: 0.75rem;
+            }
+            
+            .nav-links a {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .ai-panel {
+                width: calc(100vw - 2rem);
+                right: 1rem;
+                bottom: 1rem;
+            }
+            
+            .user-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .user-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
+        /* 文章详情页 */
+        .article-detail {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+        }
+
+        .article-detail-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .article-detail-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .article-detail-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .article-detail-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .article-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--bg-tertiary);
+        }
+
+        /* 通知系统 */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: var(--shadow);
+            z-index: 1002;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: 400px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--accent-color);
         }
     </style>
 </head>
@@ -335,20 +656,23 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-content">
-                <div class="logo">知识库</div>
+                <div class="logo">
+                    <span>📚</span>
+                    <span>知识库</span>
+                </div>
                 <div class="nav-links">
-                    <a href="#home">首页</a>
-                    <a href="#articles">文章</a>
-                    <a href="#create">写文章</a>
+                    <a href="#home" class="nav-link" data-view="home">首页</a>
+                    <a href="#articles" class="nav-link" data-view="articles">文章</a>
+                    <a href="#create" class="nav-link" data-view="create">写文章</a>
                     <div id="auth-links">
-                        <a href="#login" id="login-link">登录</a>
-                        <a href="#register" id="register-link">注册</a>
+                        <a href="#login" class="nav-link" data-view="login">登录</a>
+                        <a href="#register" class="nav-link" data-view="register">注册</a>
                     </div>
                     <div id="user-menu" class="hidden">
-                        <span id="username"></span>
-                        <a href="#logout" id="logout-btn">退出</a>
+                        <span id="username" class="mr-2"></span>
+                        <a href="#logout" id="logout-btn" class="btn btn-outline btn-sm">退出</a>
                     </div>
-                    <button class="theme-toggle" id="theme-toggle">🌓</button>
+                    <button class="theme-toggle" id="theme-toggle" title="切换主题">🌓</button>
                 </div>
             </div>
         </div>
@@ -362,14 +686,16 @@
     </div>
 
     <!-- AI 助手 -->
-    <button class="ai-toggle" id="ai-toggle">AI</button>
+    <button class="ai-toggle" id="ai-toggle" title="AI助手">🤖</button>
     <div class="ai-panel" id="ai-panel">
         <div class="ai-panel-header">
             <span>DeepSeek AI 助手</span>
-            <button onclick="closeAIPanel()">×</button>
+            <button onclick="closeAIPanel()" class="btn btn-outline btn-sm" style="color: white; border-color: rgba(255,255,255,0.3)">×</button>
         </div>
         <div class="ai-panel-content" id="ai-conversation">
-            <!-- AI对话内容 -->
+            <div class="ai-message assistant">
+                您好！我是您的知识库AI助手，有什么可以帮助您的吗？
+            </div>
         </div>
         <div class="ai-panel-input">
             <input type="text" id="ai-input" placeholder="输入您的问题..." class="form-input">
@@ -377,14 +703,91 @@
         </div>
     </div>
 
+    <!-- 通知系统 -->
+    <div id="notification-container"></div>
+
     <script>
         // 应用状态管理
         const state = {
             currentUser: null,
             currentView: 'home',
             articles: [],
-            currentArticle: null
+            currentArticle: null,
+            categories: ['技术', '生活', '学习', '工作', '其他'],
+            apiBaseUrl: '/api' // 根据实际部署调整
         };
+
+        // DOM 元素引用
+        const elements = {
+            appContent: document.getElementById('app-content'),
+            authLinks: document.getElementById('auth-links'),
+            userMenu: document.getElementById('user-menu'),
+            username: document.getElementById('username'),
+            themeToggle: document.getElementById('theme-toggle'),
+            aiToggle: document.getElementById('ai-toggle'),
+            aiPanel: document.getElementById('ai-panel'),
+            aiInput: document.getElementById('ai-input'),
+            aiConversation: document.getElementById('ai-conversation'),
+            notificationContainer: document.getElementById('notification-container')
+        };
+
+        // 工具函数：显示通知
+        function showNotification(message, type = 'info', duration = 5000) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span>${message}</span>
+            `;
+            
+            elements.notificationContainer.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // 自动隐藏
+            if (duration > 0) {
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, duration);
+            }
+            
+            return notification;
+        }
+
+        // 工具函数：API 调用
+        async function apiCall(endpoint, options = {}) {
+            const token = localStorage.getItem('token');
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                }
+            };
+
+            try {
+                const response = await fetch(`${state.apiBaseUrl}${endpoint}`, {
+                    ...defaultOptions,
+                    ...options,
+                    headers: {
+                        ...defaultOptions.headers,
+                        ...options.headers
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `请求失败: ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API调用错误:', error);
+                showNotification(error.message, 'error');
+                throw error;
+            }
+        }
 
         // 主题管理
         function initTheme() {
@@ -397,11 +800,13 @@
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
+            showNotification(`已切换到${newTheme === 'dark' ? '深色' : '浅色'}模式`, 'info', 2000);
         }
 
         // 路由管理
         function initRouter() {
             window.addEventListener('hashchange', handleRoute);
+            // 初始路由处理
             handleRoute();
         }
 
@@ -409,11 +814,34 @@
             const hash = window.location.hash.substring(1) || 'home';
             state.currentView = hash;
             renderView();
+            updateNavigation();
+        }
+
+        // 更新导航状态
+        function updateNavigation() {
+            // 更新导航链接激活状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-view') === state.currentView) {
+                    link.style.color = 'var(--accent-color)';
+                } else {
+                    link.style.color = '';
+                }
+            });
+
+            // 更新用户菜单显示
+            if (state.currentUser) {
+                elements.authLinks.classList.add('hidden');
+                elements.userMenu.classList.remove('hidden');
+                elements.username.textContent = state.currentUser.username;
+            } else {
+                elements.authLinks.classList.remove('hidden');
+                elements.userMenu.classList.add('hidden');
+            }
         }
 
         // 视图渲染
         async function renderView() {
-            const appContent = document.getElementById('app-content');
+            const appContent = elements.appContent;
             
             switch (state.currentView) {
                 case 'home':
@@ -425,6 +853,9 @@
                 case 'create':
                     appContent.innerHTML = await renderCreateView();
                     break;
+                case 'article':
+                    appContent.innerHTML = await renderArticleView();
+                    break;
                 case 'login':
                     appContent.innerHTML = await renderAuthView('login');
                     break;
@@ -434,99 +865,598 @@
                 case 'admin':
                     appContent.innerHTML = await renderAdminView();
                     break;
+                case 'logout':
+                    await handleLogout();
+                    break;
                 default:
-                    appContent.innerHTML = '<div class="card"><h2>页面未找到</h2></div>';
+                    appContent.innerHTML = '<div class="card"><h2>页面未找到</h2><p>您访问的页面不存在。</p></div>';
             }
-            
-            updateNavigation();
         }
 
         // 渲染首页
         async function renderHomeView() {
-            const articles = await fetchArticles();
-            return `
-                <div class="main-content">
-                    <div>
-                        <div class="card">
-                            <h2>欢迎使用个人知识库</h2>
-                            <p>基于 Cloudflare Workers 和 DeepSeek AI 构建的知识管理系统</p>
-                        </div>
-                        <div class="article-list">
-                            ${articles.map(article => `
-                                <div class="article-item" onclick="viewArticle('${article.id}')">
-                                    <h3 class="article-title">${article.title}</h3>
-                                    <div class="article-meta">
-                                        作者: ${article.author_name} | 分类: ${article.category} | ${new Date(article.created_at).toLocaleDateString()}
-                                    </div>
-                                    <div class="article-content-preview">${article.content.substring(0, 200)}...</div>
+            try {
+                const data = await apiCall('/articles?limit=5');
+                state.articles = data.articles || [];
+                
+                return `
+                    <div class="main-content">
+                        <div>
+                            <div class="card">
+                                <h2>欢迎使用个人知识库</h2>
+                                <p>基于 Cloudflare Workers 和 DeepSeek AI 构建的知识管理系统</p>
+                                <div class="mt-2">
+                                    <button class="btn btn-primary" onclick="window.location.hash='#create'">开始写文章</button>
+                                    <button class="btn btn-outline" onclick="window.location.hash='#articles'">浏览所有文章</button>
                                 </div>
-                            `).join('')}
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3>最新文章</h3>
+                                    <a href="#articles">查看全部</a>
+                                </div>
+                                <div class="article-list">
+                                    ${state.articles.length > 0 ? 
+                                        state.articles.map(article => `
+                                            <div class="article-item" onclick="viewArticle('${article.id}')">
+                                                <h3 class="article-title">${article.title}</h3>
+                                                <div class="article-meta">
+                                                    <span>作者: ${article.author_name}</span>
+                                                    <span>分类: ${article.category}</span>
+                                                    <span>${new Date(article.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                                <div class="article-content-preview">${article.content.substring(0, 200)}...</div>
+                                                ${article.tags && article.tags.length > 0 ? `
+                                                    <div class="article-tags">
+                                                        ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `).join('') : 
+                                        '<p class="text-center">暂无文章，<a href="#create" style="color: var(--accent-color);">开始创作</a>吧！</p>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="card">
+                                <h3>分类</h3>
+                                <div class="mt-2">
+                                    ${state.categories.map(category => `
+                                        <div class="form-group">
+                                            <a href="#articles?category=${category}" style="color: var(--accent-color);">${category}</a>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3>快速操作</h3>
+                                <div class="mt-2 flex flex-col gap-1">
+                                    <button class="btn btn-outline w-full" onclick="window.location.hash='#create'">写新文章</button>
+                                    ${state.currentUser ? `
+                                        <button class="btn btn-outline w-full" onclick="window.location.hash='#admin'">管理后台</button>
+                                    ` : ''}
+                                    <button class="btn btn-outline w-full" onclick="toggleAIPanel()">AI助手</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <div class="card">
-                            <h3>分类</h3>
-                            <!-- 分类列表 -->
+                `;
+            } catch (error) {
+                return `
+                    <div class="card">
+                        <h2>首页</h2>
+                        <p>加载文章时出错: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 渲染文章列表页
+        async function renderArticlesView() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const category = urlParams.get('category');
+                const search = urlParams.get('search');
+                
+                let endpoint = '/articles';
+                if (category || search) {
+                    endpoint += '?';
+                    if (category) endpoint += `category=${category}`;
+                    if (search) endpoint += `${category ? '&' : ''}search=${search}`;
+                }
+                
+                const data = await apiCall(endpoint);
+                state.articles = data.articles || [];
+                
+                return `
+                    <div class="main-content">
+                        <div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2>文章列表</h2>
+                                    <div class="flex gap-1">
+                                        <input type="text" id="search-input" placeholder="搜索文章..." class="form-input" style="width: 200px;" value="${search || ''}">
+                                        <button class="btn btn-primary" onclick="searchArticles()">搜索</button>
+                                    </div>
+                                </div>
+                                
+                                ${category ? `<p>筛选分类: <strong>${category}</strong> <a href="#articles" style="color: var(--accent-color); margin-left: 1rem;">清除筛选</a></p>` : ''}
+                                
+                                <div class="article-list mt-2">
+                                    ${state.articles.length > 0 ? 
+                                        state.articles.map(article => `
+                                            <div class="article-item" onclick="viewArticle('${article.id}')">
+                                                <h3 class="article-title">${article.title}</h3>
+                                                <div class="article-meta">
+                                                    <span>作者: ${article.author_name}</span>
+                                                    <span>分类: ${article.category}</span>
+                                                    <span>${new Date(article.created_at).toLocaleDateString()}</span>
+                                                    ${!article.is_public ? '<span style="color: var(--warning-color);">私有</span>' : ''}
+                                                </div>
+                                                <div class="article-content-preview">${article.content.substring(0, 200)}...</div>
+                                                ${article.tags && article.tags.length > 0 ? `
+                                                    <div class="article-tags">
+                                                        ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `).join('') : 
+                                        '<p class="text-center">没有找到相关文章</p>'
+                                    }
+                                </div>
+                            </div>
                         </div>
+                        <div>
+                            <div class="card">
+                                <h3>分类筛选</h3>
+                                <div class="mt-2">
+                                    ${state.categories.map(category => `
+                                        <div class="form-group">
+                                            <a href="#articles?category=${category}" style="color: var(--accent-color);">${category}</a>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                return `
+                    <div class="card">
+                        <h2>文章列表</h2>
+                        <p>加载文章时出错: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 搜索文章
+        function searchArticles() {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput.value.trim();
+            
+            if (searchTerm) {
+                window.location.hash = `#articles?search=${encodeURIComponent(searchTerm)}`;
+            } else {
+                window.location.hash = '#articles';
+            }
+        }
+
+        // 渲染创建文章页
+        async function renderCreateView() {
+            if (!state.currentUser) {
+                window.location.hash = '#login';
+                return '<div class="card"><p>请先登录</p></div>';
+            }
+            
+            return `
+                <div class="card">
+                    <h2>创建新文章</h2>
+                    <form id="create-article-form">
+                        <div class="form-group">
+                            <label class="form-label" for="article-title">标题</label>
+                            <input type="text" id="article-title" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="article-category">分类</label>
+                            <select id="article-category" class="form-select" required>
+                                <option value="">选择分类</option>
+                                ${state.categories.map(category => `
+                                    <option value="${category}">${category}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="article-tags">标签 (用逗号分隔)</label>
+                            <input type="text" id="article-tags" class="form-input" placeholder="例如: JavaScript,编程,教程">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="article-content">内容</label>
+                            <textarea id="article-content" class="form-textarea" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="article-is-public" checked>
+                                <span style="margin-left: 0.5rem;">公开文章</span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group flex gap-1">
+                            <button type="submit" class="btn btn-primary">发布文章</button>
+                            <button type="button" class="btn btn-outline" onclick="window.location.hash='#articles'">取消</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card mt-2">
+                    <h3>AI 写作助手</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="ai-writing-prompt">写作提示</label>
+                        <input type="text" id="ai-writing-prompt" class="form-input" placeholder="例如: 写一篇关于Cloudflare Workers的简介">
+                    </div>
+                    <button class="btn btn-outline" onclick="generateWithAI()">AI 生成内容</button>
+                </div>
+            `;
+        }
+
+        // 渲染文章详情页
+        async function renderArticleView() {
+            const articleId = new URLSearchParams(window.location.search).get('id');
+            
+            if (!articleId) {
+                return '<div class="card"><p>文章ID不存在</p></div>';
+            }
+            
+            try {
+                const data = await apiCall(`/articles/${articleId}`);
+                state.currentArticle = data.article;
+                
+                if (!state.currentArticle) {
+                    return '<div class="card"><p>文章不存在</p></div>';
+                }
+                
+                const isOwner = state.currentUser && state.currentUser.id === state.currentArticle.user_id;
+                
+                return `
+                    <div class="article-detail">
+                        <div class="article-detail-header">
+                            <h1 class="article-detail-title">${state.currentArticle.title}</h1>
+                            <div class="article-detail-meta">
+                                <span>作者: ${state.currentArticle.author_name}</span>
+                                <span>分类: ${state.currentArticle.category}</span>
+                                <span>发布时间: ${new Date(state.currentArticle.created_at).toLocaleString()}</span>
+                                <span>更新时间: ${new Date(state.currentArticle.updated_at).toLocaleString()}</span>
+                                ${!state.currentArticle.is_public ? '<span style="color: var(--warning-color);">私有文章</span>' : ''}
+                            </div>
+                            ${state.currentArticle.tags && state.currentArticle.tags.length > 0 ? `
+                                <div class="article-tags mt-1">
+                                    ${state.currentArticle.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="article-detail-content">
+                            ${state.currentArticle.content.replace(/\n/g, '<br>')}
+                        </div>
+                        
+                        ${isOwner ? `
+                            <div class="article-actions">
+                                <button class="btn btn-primary" onclick="editArticle('${state.currentArticle.id}')">编辑</button>
+                                <button class="btn btn-error" onclick="deleteArticle('${state.currentArticle.id}')">删除</button>
+                                <button class="btn btn-outline" onclick="window.location.hash='#articles'">返回列表</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                return `
+                    <div class="card">
+                        <h2>文章详情</h2>
+                        <p>加载文章时出错: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 渲染认证页面
+        async function renderAuthView(type) {
+            return `
+                <div class="auth-container">
+                    <div class="card">
+                        <div class="auth-tabs">
+                            <button class="auth-tab ${type === 'login' ? 'active' : ''}" onclick="switchAuthTab('login')">登录</button>
+                            <button class="auth-tab ${type === 'register' ? 'active' : ''}" onclick="switchAuthTab('register')">注册</button>
+                        </div>
+                        
+                        <form id="login-form" class="auth-form ${type === 'login' ? 'active' : ''}">
+                            <div class="form-group">
+                                <label class="form-label" for="login-email">邮箱</label>
+                                <input type="email" id="login-email" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="login-password">密码</label>
+                                <input type="password" id="login-password" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary w-full">登录</button>
+                            </div>
+                        </form>
+                        
+                        <form id="register-form" class="auth-form ${type === 'register' ? 'active' : ''}">
+                            <div class="form-group">
+                                <label class="form-label" for="register-email">邮箱</label>
+                                <input type="email" id="register-email" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="register-username">用户名</label>
+                                <input type="text" id="register-username" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="register-password">密码</label>
+                                <input type="password" id="register-password" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="register-confirm-password">确认密码</label>
+                                <input type="password" id="register-confirm-password" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary w-full">注册</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             `;
         }
 
-        // 认证管理
-        async function login(email, password) {
+        // 渲染管理页面
+        async function renderAdminView() {
+            if (!state.currentUser) {
+                window.location.hash = '#login';
+                return '<div class="card"><p>请先登录</p></div>';
+            }
+            
             try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    localStorage.setItem('token', data.token);
-                    state.currentUser = data.user;
-                    window.location.hash = 'home';
-                } else {
-                    alert(data.error);
+                // 检查管理员权限
+                const isAdmin = await checkAdminPermission();
+                if (!isAdmin) {
+                    return `
+                        <div class="card">
+                            <h2>管理后台</h2>
+                            <p>您没有管理员权限访问此页面。</p>
+                        </div>
+                    `;
                 }
+                
+                // 获取待审核用户
+                const usersData = await apiCall('/admin/pending-users');
+                const pendingUsers = usersData.users || [];
+                
+                return `
+                    <div class="admin-panel">
+                        <h2>管理后台</h2>
+                        
+                        <div class="admin-section">
+                            <h3>用户审核</h3>
+                            ${pendingUsers.length > 0 ? `
+                                <div class="user-list">
+                                    ${pendingUsers.map(user => `
+                                        <div class="user-item">
+                                            <div class="user-info">
+                                                <div class="user-email">${user.email}</div>
+                                                <div class="user-meta">
+                                                    用户名: ${user.username} | 
+                                                    注册时间: ${new Date(user.created_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                            <div class="user-actions">
+                                                <button class="btn btn-success btn-sm" onclick="approveUser('${user.id}', true)">通过</button>
+                                                <button class="btn btn-error btn-sm" onclick="approveUser('${user.id}', false)">拒绝</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p>暂无待审核用户</p>'}
+                        </div>
+                        
+                        <div class="admin-section">
+                            <h3>数据管理</h3>
+                            <div class="flex gap-1">
+                                <button class="btn btn-outline" onclick="exportData()">导出数据</button>
+                                <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">导入数据</button>
+                                <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(this.files[0])">
+                            </div>
+                        </div>
+                        
+                        <div class="admin-section">
+                            <h3>系统信息</h3>
+                            <p>知识库系统版本: 1.0.0</p>
+                            <p>当前用户: ${state.currentUser.username}</p>
+                            <p>AI模型: DeepSeek</p>
+                        </div>
+                    </div>
+                `;
             } catch (error) {
-                alert('登录失败: ' + error.message);
+                return `
+                    <div class="card">
+                        <h2>管理后台</h2>
+                        <p>加载管理页面时出错: ${error.message}</p>
+                    </div>
+                `;
             }
         }
 
-        async function register(email, username, password) {
+        // 切换认证标签页
+        function switchAuthTab(tab) {
+            window.location.hash = `#${tab}`;
+        }
+
+        // 查看文章详情
+        function viewArticle(articleId) {
+            window.location.hash = `#article?id=${articleId}`;
+        }
+
+        // 编辑文章
+        function editArticle(articleId) {
+            // 在实际应用中，这里应该跳转到编辑页面
+            showNotification('编辑功能开发中...', 'info');
+        }
+
+        // 删除文章
+        async function deleteArticle(articleId) {
+            if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) {
+                return;
+            }
+            
             try {
-                const response = await fetch('/api/auth/register', {
+                await apiCall(`/articles/${articleId}`, { method: 'DELETE' });
+                showNotification('文章已删除', 'success');
+                window.location.hash = '#articles';
+            } catch (error) {
+                // 错误已在apiCall中处理
+            }
+        }
+
+        // 认证管理
+        async function handleLogin(email, password) {
+            try {
+                const data = await apiCall('/auth/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                localStorage.setItem('token', data.token);
+                state.currentUser = data.user;
+                showNotification('登录成功', 'success');
+                window.location.hash = 'home';
+            } catch (error) {
+                // 错误已在apiCall中处理
+            }
+        }
+
+        async function handleRegister(email, username, password, confirmPassword) {
+            if (password !== confirmPassword) {
+                showNotification('两次输入的密码不一致', 'error');
+                return;
+            }
+            
+            try {
+                const data = await apiCall('/auth/register', {
+                    method: 'POST',
                     body: JSON.stringify({ email, username, password })
                 });
                 
-                const data = await response.json();
-                alert(data.message || data.error);
-                
-                if (response.ok) {
-                    window.location.hash = 'login';
-                }
+                showNotification(data.message || '注册成功，请等待管理员审核', 'success');
+                window.location.hash = 'login';
             } catch (error) {
-                alert('注册失败: ' + error.message);
+                // 错误已在apiCall中处理
             }
+        }
+
+        async function handleLogout() {
+            localStorage.removeItem('token');
+            state.currentUser = null;
+            showNotification('已退出登录', 'info');
+            window.location.hash = 'home';
+        }
+
+        // 检查管理员权限
+        async function checkAdminPermission() {
+            try {
+                // 这里应该调用一个API来验证用户权限
+                // 简化处理：假设第一个用户是管理员
+                return state.currentUser && state.currentUser.id === 'admin';
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // 管理员功能
+        async function approveUser(userId, approve) {
+            try {
+                await apiCall('/admin/approve-user', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        userId, 
+                        action: approve ? 'approve' : 'reject' 
+                    })
+                });
+                
+                showNotification(`用户已${approve ? '通过' : '拒绝'}`, 'success');
+                // 刷新管理页面
+                window.location.hash = 'admin';
+            } catch (error) {
+                // 错误已在apiCall中处理
+            }
+        }
+
+        async function exportData() {
+            try {
+                const data = await apiCall('/admin/export');
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `knowledge-base-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification('数据导出成功', 'success');
+            } catch (error) {
+                // 错误已在apiCall中处理
+            }
+        }
+
+        async function importData(file) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+                    await apiCall('/admin/import', {
+                        method: 'POST',
+                        body: JSON.stringify(importData)
+                    });
+                    showNotification('数据导入成功', 'success');
+                } catch (error) {
+                    showNotification('导入文件格式错误', 'error');
+                }
+            };
+            reader.readAsText(file);
         }
 
         // AI 助手功能
         function toggleAIPanel() {
-            const panel = document.getElementById('ai-panel');
+            if (!state.currentUser) {
+                showNotification('请先登录以使用AI助手', 'warning');
+                window.location.hash = 'login';
+                return;
+            }
+            
+            const panel = elements.aiPanel;
             panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
         }
 
         function closeAIPanel() {
-            document.getElementById('ai-panel').style.display = 'none';
+            elements.aiPanel.style.display = 'none';
         }
 
         async function sendAIMessage() {
-            const input = document.getElementById('ai-input');
+            const input = elements.aiInput;
             const message = input.value.trim();
             
             if (!message) return;
@@ -535,41 +1465,113 @@
             addAIMessage('user', message);
             input.value = '';
             
+            // 显示加载状态
+            const loadingMessage = addAIMessage('assistant', '思考中...', true);
+            
             try {
-                const response = await fetch('/api/ai/generate', {
+                const response = await apiCall('/ai/generate', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     body: JSON.stringify({ prompt: message })
                 });
                 
-                const data = await response.json();
-                if (response.ok) {
-                    addAIMessage('assistant', data.response);
-                } else {
-                    addAIMessage('assistant', '抱歉，我遇到了一些问题。');
-                }
+                // 移除加载消息
+                loadingMessage.remove();
+                
+                // 添加AI回复
+                addAIMessage('assistant', response.response);
             } catch (error) {
-                addAIMessage('assistant', '网络错误，请稍后重试。');
+                // 移除加载消息
+                loadingMessage.remove();
+                
+                // 添加错误消息
+                addAIMessage('assistant', '抱歉，我遇到了一些问题，请稍后重试。');
             }
         }
 
-        function addAIMessage(role, content) {
-            const conversation = document.getElementById('ai-conversation');
+        function addAIMessage(role, content, isTemp = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `ai-message ${role}`;
             messageDiv.textContent = content;
-            conversation.appendChild(messageDiv);
-            conversation.scrollTop = conversation.scrollHeight;
+            
+            if (isTemp) {
+                messageDiv.id = 'temp-ai-message';
+            }
+            
+            elements.aiConversation.appendChild(messageDiv);
+            elements.aiConversation.scrollTop = elements.aiConversation.scrollHeight;
+            
+            return messageDiv;
         }
 
-        // PWA 服务工作者注册
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => console.log('SW registered'))
-                .catch(error => console.log('SW registration failed'));
+        // AI 生成文章内容
+        async function generateWithAI() {
+            const promptInput = document.getElementById('ai-writing-prompt');
+            const contentTextarea = document.getElementById('article-content');
+            
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showNotification('请输入写作提示', 'warning');
+                return;
+            }
+            
+            const button = document.querySelector('button[onclick="generateWithAI()"]');
+            const originalText = button.textContent;
+            button.innerHTML = '<span class="loading"></span> 生成中...';
+            button.disabled = true;
+            
+            try {
+                const response = await apiCall('/ai/generate', {
+                    method: 'POST',
+                    body: JSON.stringify({ prompt })
+                });
+                
+                contentTextarea.value = response.response;
+                showNotification('AI内容生成成功', 'success');
+            } catch (error) {
+                // 错误已在apiCall中处理
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // 文章表单提交
+        async function handleArticleSubmit(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('article-title').value;
+            const category = document.getElementById('article-category').value;
+            const tags = document.getElementById('article-tags').value;
+            const content = document.getElementById('article-content').value;
+            const isPublic = document.getElementById('article-is-public').checked;
+            
+            const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+            
+            const button = event.target.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+            button.innerHTML = '<span class="loading"></span> 发布中...';
+            button.disabled = true;
+            
+            try {
+                await apiCall('/articles', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        category,
+                        tags: tagArray,
+                        is_public: isPublic
+                    })
+                });
+                
+                showNotification('文章发布成功', 'success');
+                window.location.hash = 'articles';
+            } catch (error) {
+                // 错误已在apiCall中处理
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
 
         // 初始化
@@ -578,19 +1580,79 @@
             initRouter();
             
             // 事件监听器
-            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-            document.getElementById('ai-toggle').addEventListener('click', toggleAIPanel);
+            elements.themeToggle.addEventListener('click', toggleTheme);
+            elements.aiToggle.addEventListener('click', toggleAIPanel);
             
             // 检查登录状态
             const token = localStorage.getItem('token');
             if (token) {
                 verifyToken(token);
             }
+            
+            // 全局事件委托
+            document.addEventListener('submit', function(event) {
+                if (event.target.id === 'login-form') {
+                    event.preventDefault();
+                    const email = document.getElementById('login-email').value;
+                    const password = document.getElementById('login-password').value;
+                    handleLogin(email, password);
+                }
+                
+                if (event.target.id === 'register-form') {
+                    event.preventDefault();
+                    const email = document.getElementById('register-email').value;
+                    const username = document.getElementById('register-username').value;
+                    const password = document.getElementById('register-password').value;
+                    const confirmPassword = document.getElementById('register-confirm-password').value;
+                    handleRegister(email, username, password, confirmPassword);
+                }
+                
+                if (event.target.id === 'create-article-form') {
+                    handleArticleSubmit(event);
+                }
+            });
+            
+            // AI输入框回车发送
+            elements.aiInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    sendAIMessage();
+                }
+            });
+            
+            // 点击外部关闭AI面板
+            document.addEventListener('click', function(event) {
+                if (!elements.aiPanel.contains(event.target) && 
+                    !elements.aiToggle.contains(event.target) && 
+                    elements.aiPanel.style.display === 'flex') {
+                    closeAIPanel();
+                }
+            });
         });
 
-        // 更多JavaScript函数...
-        // 由于篇幅限制，这里只展示了部分核心代码
-        // 完整代码需要实现所有视图渲染、API调用等功能
+        // 验证token
+        async function verifyToken(token) {
+            try {
+                const data = await apiCall('/auth/me');
+                state.currentUser = data.user;
+                updateNavigation();
+            } catch (error) {
+                // token无效，清除
+                localStorage.removeItem('token');
+            }
+        }
+
+        // PWA 服务工作者注册
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
