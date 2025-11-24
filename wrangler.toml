@@ -7,7 +7,7 @@ pages_build_output_dir = "./public"
 [[d1_databases]]
 binding = "D1_DATABASE"
 database_name = "my-knowledge-base-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "39d46582-47cd-4d07-87f7-267b8670eeae"
 
 [[kv_namespaces]]
 binding = "KV_NAMESPACE"
