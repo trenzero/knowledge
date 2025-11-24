@@ -11,4 +11,4 @@ database_id = "39d46582-47cd-4d07-87f7-267b8670eeae"
 
 [[kv_namespaces]]
 binding = "KV_NAMESPACE"
-id = "YOUR_KV_NAMESPACE_ID"
+id = "7119150f381143b3a46b01e992e2f8d6"
