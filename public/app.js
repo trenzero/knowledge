@@ -5,20 +5,11 @@ class KnowledgeBase {
         this.currentTag = null;
         this.categories = [];
         this.tags = [];
-        this.articles = [];
-        
-        // 性能优化相关
-        this.cache = new Map();
-        this.debounceTimers = new Map();
-        this.intersectionObserver = null;
         
         this.init();
     }
     
     async init() {
-        // 初始化懒加载观察器
-        this.initLazyLoading();
-        
         // 检查PWA支持
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
@@ -27,35 +18,15 @@ class KnowledgeBase {
         }
         
         // 加载初始数据
-        await Promise.all([
-            this.loadCategories(),
-            this.loadTags(),
-            this.loadArticles()
-        ]);
+        await this.loadCategories();
+        await this.loadTags();
+        await this.loadArticles();
         
         // 绑定事件
         this.bindEvents();
         
         // 应用保存的主题
         this.applySavedTheme();
-    }
-    
-    initLazyLoading() {
-        if ('IntersectionObserver' in window) {
-            this.intersectionObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.dataset.src;
-                        img.classList.add('loaded');
-                        this.intersectionObserver.unobserve(img);
-                    }
-                });
-            }, {
-                rootMargin: '50px 0px',
-                threshold: 0.1
-            });
-        }
     }
     
     bindEvents() {
@@ -69,11 +40,6 @@ class KnowledgeBase {
         document.getElementById('saveCategoryBtn').addEventListener('click', () => this.saveCategory());
         document.getElementById('cancelCategoryBtn').addEventListener('click', () => this.hideCategoryModal());
         
-        // 分类编辑操作
-        document.getElementById('updateCategoryBtn').addEventListener('click', () => this.updateCategory());
-        document.getElementById('deleteCategoryBtn').addEventListener('click', () => this.deleteCategory());
-        document.getElementById('cancelEditCategoryBtn').addEventListener('click', () => this.hideEditCategoryModal());
-        
         // 数据管理
         document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
         document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
@@ -82,67 +48,34 @@ class KnowledgeBase {
         // 主题切换
         document.getElementById('toggleDarkMode').addEventListener('click', () => this.toggleTheme());
         
-        // 防抖搜索
-        document.getElementById('searchInput').addEventListener('input', 
-            this.debounce((e) => this.searchArticles(e.target.value), 300)
-        );
-    }
-    
-    // 防抖函数
-    debounce(func, wait) {
-        return (...args) => {
-            clearTimeout(this.debounceTimers.get(func));
-            this.debounceTimers.set(func, setTimeout(() => func.apply(this, args), wait));
-        };
-    }
-    
-    // 缓存数据函数
-    async cachedFetch(url, options = {}, cacheKey = url, ttl = 60000) { // 默认缓存1分钟
-        const now = Date.now();
-        const cached = this.cache.get(cacheKey);
-        
-        if (cached && (now - cached.timestamp < ttl)) {
-            return cached.data;
-        }
-        
-        try {
-            const response = await fetch(url, options);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
-            
-            this.cache.set(cacheKey, {
-                data,
-                timestamp: now
-            });
-            
-            return data;
-        } catch (error) {
-            // 如果网络请求失败但缓存中有数据，使用缓存数据
-            if (cached) {
-                console.warn('Using cached data due to network error:', error);
-                return cached.data;
-            }
-            throw error;
-        }
+        // 搜索
+        document.getElementById('searchInput').addEventListener('input', (e) => this.searchArticles(e.target.value));
     }
     
     async loadCategories() {
         try {
-            this.showCategoriesLoading();
-            
-            this.categories = await this.cachedFetch('/api/categories');
+            console.log('正在加载分类...');
+            const response = await fetch('/api/categories');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.categories = await response.json();
             console.log('加载的分类数据:', this.categories);
             this.renderCategories();
             this.renderCategorySelects();
         } catch (error) {
             console.error('加载分类失败:', error);
-            this.showError('加载分类失败: ' + error.message);
+            alert('加载分类失败: ' + error.message);
         }
     }
     
     async loadTags() {
         try {
-            this.tags = await this.cachedFetch('/api/tags');
+            const response = await fetch('/api/tags');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.tags = await response.json();
             this.renderTags();
         } catch (error) {
             console.error('加载标签失败:', error);
@@ -151,8 +84,6 @@ class KnowledgeBase {
     
     async loadArticles(categoryId = null, tag = null) {
         try {
-            this.showArticlesLoading();
-            
             let url = '/api/articles';
             const params = new URLSearchParams();
             
@@ -161,50 +92,18 @@ class KnowledgeBase {
             
             if (params.toString()) url += '?' + params.toString();
             
-            this.articles = await this.cachedFetch(url, {}, `articles-${categoryId}-${tag}`);
-            this.renderArticles(this.articles);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const articles = await response.json();
+            this.renderArticles(articles);
             
             // 更新内容标题
             this.updateContentTitle(categoryId, tag);
         } catch (error) {
             console.error('加载文章失败:', error);
-            this.showError('加载文章失败: ' + error.message);
         }
-    }
-    
-    showCategoriesLoading() {
-        const container = document.getElementById('categoriesTree');
-        container.innerHTML = `
-            <div class="category-item">
-                <div class="skeleton skeleton-text" style="width: 80%"></div>
-                <div class="skeleton skeleton-text" style="width: 60%"></div>
-            </div>
-        `;
-    }
-    
-    showArticlesLoading() {
-        const container = document.getElementById('articlesList');
-        container.innerHTML = `
-            <div class="article-item">
-                <div class="skeleton skeleton-text" style="width: 70%"></div>
-                <div class="skeleton skeleton-text" style="width: 50%"></div>
-                <div class="skeleton skeleton-text" style="width: 90%"></div>
-                <div class="skeleton skeleton-text" style="width: 90%"></div>
-            </div>
-            <div class="article-item">
-                <div class="skeleton skeleton-text" style="width: 60%"></div>
-                <div class="skeleton skeleton-text" style="width: 40%"></div>
-                <div class="skeleton skeleton-text" style="width: 85%"></div>
-                <div class="skeleton skeleton-text" style="width: 85%"></div>
-            </div>
-        `;
-    }
-    
-    showError(message) {
-        // 可以替换为更友好的错误提示UI
-        console.error('Error:', message);
-        // 临时使用alert，建议替换为自定义Toast组件
-        alert(message);
     }
     
     renderCategories() {
@@ -223,20 +122,10 @@ class KnowledgeBase {
             div.dataset.id = category.id;
             div.innerHTML = `
                 <span>${this.escapeHtml(category.name)}</span>
-                <div class="category-actions">
-                    <span class="category-count">${category.article_count || 0}</span>
-                    <button class="btn-category-edit" title="编辑分类">✏️</button>
-                </div>
+                <span class="category-count">${category.article_count || 0}</span>
             `;
             
-            // 分类点击事件
-            div.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-category-edit')) {
-                    e.stopPropagation();
-                    this.editCategory(category);
-                    return;
-                }
-                
+            div.addEventListener('click', () => {
                 this.currentCategory = category.id;
                 this.currentTag = null;
                 this.loadArticles(category.id);
@@ -254,22 +143,177 @@ class KnowledgeBase {
         this.categories.forEach(category => renderCategory(category));
     }
     
-    // 编辑分类
-    editCategory(category) {
-        document.getElementById('editCategoryModal').style.display = 'flex';
-        document.getElementById('editCategoryId').value = category.id;
-        document.getElementById('editCategoryName').value = category.name;
-        document.getElementById('editCategoryParent').value = category.parent_id || '';
+    renderTags() {
+        const container = document.getElementById('tagsCloud');
+        container.innerHTML = '';
         
-        // 填充父分类选择器（排除自己及其子分类）
-        this.renderEditCategoryParentSelect(category.id);
+        if (this.tags.length === 0) {
+            container.innerHTML = '<div>暂无标签</div>';
+            return;
+        }
+        
+        this.tags.forEach(tag => {
+            const span = document.createElement('span');
+            span.className = `tag ${this.currentTag === tag.name ? 'active' : ''}`;
+            span.textContent = `${tag.name} (${tag.count || 0})`;
+            
+            span.addEventListener('click', () => {
+                this.currentTag = tag.name;
+                this.currentCategory = null;
+                this.loadArticles(null, tag.name);
+                this.highlightActiveTag();
+            });
+            
+            container.appendChild(span);
+        });
     }
     
-    // 更新分类
-    async updateCategory() {
-        const id = document.getElementById('editCategoryId').value;
-        const name = document.getElementById('editCategoryName').value.trim();
-        const parentId = document.getElementById('editCategoryParent').value || null;
+    renderArticles(articles) {
+        const container = document.getElementById('articlesList');
+        
+        if (articles.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>没有找到文章</p>
+                    <button class="btn-primary" onclick="knowledgeBase.showEditor()">创建第一篇文章</button>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = articles.map(article => `
+            <div class="article-item" data-id="${article.id}">
+                <h3>${this.escapeHtml(article.title)}</h3>
+                <div class="article-meta">
+                    <span>${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
+                    <span>${article.category_name || '未分类'}</span>
+                </div>
+                ${article.tags ? `
+                <div class="article-tags">
+                    ${article.tags.split(',').map(tag => 
+                        `<span class="article-tag">${this.escapeHtml(tag.trim())}</span>`
+                    ).join('')}
+                </div>
+                ` : ''}
+                <div class="article-content-preview">
+                    ${this.escapeHtml(article.content.substring(0, 200))}...
+                </div>
+            </div>
+        `).join('');
+        
+        // 添加点击事件
+        container.querySelectorAll('.article-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const articleId = item.dataset.id;
+                this.editArticle(articleId);
+            });
+        });
+    }
+    
+    renderCategorySelects() {
+        const articleSelect = document.getElementById('articleCategory');
+        const categorySelect = document.getElementById('categoryParent');
+        
+        const renderOptions = (select, categories, level = 0) => {
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = ' '.repeat(level * 2) + category.name;
+                select.appendChild(option);
+                
+                if (category.children && category.children.length > 0) {
+                    renderOptions(select, category.children, level + 1);
+                }
+            });
+        };
+        
+        articleSelect.innerHTML = '<option value="">选择分类</option>';
+        categorySelect.innerHTML = '<option value="">无父分类（顶级分类）</option>';
+        
+        renderOptions(articleSelect, this.categories);
+        renderOptions(categorySelect, this.categories);
+    }
+    
+    async editArticle(articleId) {
+        try {
+            const response = await fetch(`/api/articles?id=${articleId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const article = await response.json();
+            
+            this.currentArticle = article;
+            this.showEditor();
+            
+            document.getElementById('articleTitle').value = article.title;
+            document.getElementById('articleContent').value = article.content;
+            document.getElementById('articleCategory').value = article.category_id;
+            document.getElementById('articleTags').value = article.tags || '';
+        } catch (error) {
+            console.error('加载文章失败:', error);
+            alert('加载文章失败');
+        }
+    }
+    
+    async saveArticle() {
+        const title = document.getElementById('articleTitle').value.trim();
+        const content = document.getElementById('articleContent').value.trim();
+        const categoryId = document.getElementById('articleCategory').value;
+        const tags = document.getElementById('articleTags').value.split(',').map(t => t.trim()).filter(t => t);
+        
+        if (!title || !content || !categoryId) {
+            alert('请填写标题、内容和选择分类');
+            return;
+        }
+        
+        try {
+            const articleData = {
+                title,
+                content,
+                category_id: parseInt(categoryId),
+                tags
+            };
+            
+            let url = '/api/articles';
+            let method = 'POST';
+            
+            if (this.currentArticle) {
+                url += `?id=${this.currentArticle.id}`;
+                method = 'PUT';
+            }
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(articleData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.hideEditor();
+                await this.loadArticles(this.currentCategory, this.currentTag);
+                await this.loadCategories();
+                await this.loadTags();
+                alert('保存成功！');
+            } else {
+                throw new Error(result.error || '保存失败');
+            }
+        } catch (error) {
+            console.error('保存文章失败:', error);
+            alert('保存文章失败: ' + error.message);
+        }
+    }
+    
+    async saveCategory() {
+        const name = document.getElementById('categoryName').value.trim();
+        const parentId = document.getElementById('categoryParent').value || null;
         
         if (!name) {
             alert('请输入分类名称');
@@ -282,8 +326,8 @@ class KnowledgeBase {
                 parent_id: parentId ? parseInt(parentId) : null 
             };
             
-            const response = await fetch(`/api/categories?id=${id}`, {
-                method: 'PUT',
+            const response = await fetch('/api/categories', {
+                method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
                 },
@@ -297,32 +341,59 @@ class KnowledgeBase {
             const result = await response.json();
             
             if (result.success) {
-                this.hideEditCategoryModal();
-                // 清除分类缓存
-                this.cache.delete('/api/categories');
+                this.hideCategoryModal();
                 await this.loadCategories();
-                this.showSuccess('分类更新成功！');
+                alert('分类创建成功！');
             } else {
-                throw new Error(result.error || '更新失败');
+                throw new Error(result.error || '保存失败');
             }
         } catch (error) {
-            console.error('更新分类失败:', error);
-            this.showError('更新分类失败: ' + error.message);
+            console.error('保存分类失败:', error);
+            alert('保存分类失败: ' + error.message);
         }
     }
     
-    // 删除分类
-    async deleteCategory() {
-        const id = document.getElementById('editCategoryId').value;
-        const categoryName = document.getElementById('editCategoryName').value;
-        
-        if (!confirm(`确定要删除分类 "${categoryName}" 吗？此操作将同时删除该分类下的所有文章，且无法恢复。`)) {
-            return;
+    async exportData() {
+        try {
+            const response = await fetch('/api/export');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `knowledge-base-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('导出失败:', error);
+            alert('导出数据失败: ' + error.message);
         }
+    }
+    
+    async importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
         
         try {
-            const response = await fetch(`/api/categories?id=${id}`, {
-                method: 'DELETE'
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            if (!confirm(`确定要导入数据吗？这将添加 ${data.articles?.length || 0} 篇文章、${data.categories?.length || 0} 个分类和 ${data.tags?.length || 0} 个标签。`)) {
+                return;
+            }
+            
+            const response = await fetch('/api/import', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
             });
             
             if (!response.ok) {
@@ -332,78 +403,160 @@ class KnowledgeBase {
             const result = await response.json();
             
             if (result.success) {
-                this.hideEditCategoryModal();
-                // 清除相关缓存
-                this.cache.delete('/api/categories');
-                this.cache.forEach((value, key) => {
-                    if (key.startsWith('articles-')) this.cache.delete(key);
-                });
-                
+                alert('导入成功！');
                 await this.loadCategories();
+                await this.loadTags();
                 await this.loadArticles();
-                this.showSuccess('分类删除成功！');
             } else {
-                throw new Error(result.error || '删除失败');
+                throw new Error(result.error || '导入失败');
             }
         } catch (error) {
-            console.error('删除分类失败:', error);
-            this.showError('删除分类失败: ' + error.message);
+            console.error('导入失败:', error);
+            alert('导入数据失败: ' + error.message);
+        } finally {
+            event.target.value = '';
         }
     }
     
-    // 渲染编辑分类时的父分类选择器（排除自己及其子分类）
-    renderEditCategoryParentSelect(excludeId) {
-        const select = document.getElementById('editCategoryParent');
-        select.innerHTML = '<option value="">无父分类（顶级分类）</option>';
+    searchArticles(query) {
+        if (!query.trim()) {
+            this.loadArticles(this.currentCategory, this.currentTag);
+            return;
+        }
         
-        const renderOptions = (categories, level = 0, parentId = null) => {
-            categories.forEach(category => {
-                // 跳过要排除的分类及其子分类
-                if (category.id == excludeId) return;
-                
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = ' '.repeat(level * 2) + category.name;
-                option.disabled = this.isDescendantOf(category, excludeId);
-                select.appendChild(option);
-                
-                if (category.children && category.children.length > 0) {
-                    renderOptions(category.children, level + 1, category.id);
-                }
-            });
-        };
+        // 简单的客户端搜索
+        const articles = document.querySelectorAll('.article-item');
+        let found = false;
         
-        renderOptions(this.categories);
+        articles.forEach(article => {
+            const title = article.querySelector('h3').textContent.toLowerCase();
+            const content = article.querySelector('.article-content-preview').textContent.toLowerCase();
+            const matches = title.includes(query.toLowerCase()) || content.includes(query.toLowerCase());
+            article.style.display = matches ? 'block' : 'none';
+            if (matches) found = true;
+        });
+        
+        if (!found) {
+            document.getElementById('articlesList').innerHTML = `
+                <div class="empty-state">
+                    <p>没有找到包含 "${query}" 的文章</p>
+                </div>
+            `;
+        }
     }
     
-    // 检查分类是否是另一个分类的后代
-    isDescendantOf(category, targetId) {
-        if (category.id == targetId) return true;
+    updateContentTitle(categoryId, tag) {
+        const titleElement = document.getElementById('contentTitle');
         
-        if (category.children && category.children.length > 0) {
-            for (const child of category.children) {
-                if (this.isDescendantOf(child, targetId)) {
-                    return true;
+        if (categoryId) {
+            const category = this.findCategoryById(categoryId);
+            titleElement.textContent = category ? `分类: ${category.name}` : '分类文章';
+        } else if (tag) {
+            titleElement.textContent = `标签: ${tag}`;
+        } else {
+            titleElement.textContent = '所有文章';
+        }
+    }
+    
+    findCategoryById(id) {
+        const findInCategories = (categories, targetId) => {
+            for (const category of categories) {
+                if (category.id === targetId) return category;
+                if (category.children) {
+                    const found = findInCategories(category.children, targetId);
+                    if (found) return found;
                 }
             }
-        }
+            return null;
+        };
         
-        return false;
+        return findInCategories(this.categories, parseInt(id));
     }
     
-    hideEditCategoryModal() {
-        document.getElementById('editCategoryModal').style.display = 'none';
+    showEditor() {
+        document.getElementById('articlesList').style.display = 'none';
+        document.getElementById('articleEditor').style.display = 'flex';
+        document.getElementById('contentTitle').textContent = this.currentArticle ? '编辑文章' : '新建文章';
+        
+        if (!this.currentArticle) {
+            // 新建文章
+            document.getElementById('articleTitle').value = '';
+            document.getElementById('articleContent').value = '';
+            document.getElementById('articleCategory').value = '';
+            document.getElementById('articleTags').value = '';
+        }
     }
     
-    showSuccess(message) {
-        // 可以替换为更友好的成功提示UI
-        console.log('Success:', message);
-        // 临时使用alert，建议替换为自定义Toast组件
-        alert(message);
+    hideEditor() {
+        document.getElementById('articlesList').style.display = 'block';
+        document.getElementById('articleEditor').style.display = 'none';
+        this.currentArticle = null;
+        this.updateContentTitle(this.currentCategory, this.currentTag);
     }
     
-    // 其他现有方法保持不变...
-    // [保留所有其他现有方法]
+    showCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'flex';
+        document.getElementById('categoryName').value = '';
+        document.getElementById('categoryParent').value = '';
+        document.getElementById('categoryModalTitle').textContent = '新建分类';
+    }
+    
+    hideCategoryModal() {
+        document.getElementById('categoryModal').style.display = 'none';
+    }
+    
+    toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        // 更新按钮文本
+        const button = document.getElementById('toggleDarkMode');
+        button.textContent = newTheme === 'dark' ? '切换浅色' : '切换深色';
+    }
+    
+    applySavedTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        // 更新按钮文本
+        const button = document.getElementById('toggleDarkMode');
+        button.textContent = savedTheme === 'dark' ? '切换浅色' : '切换深色';
+    }
+    
+    highlightActiveCategory() {
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        if (this.currentCategory) {
+            const activeItem = document.querySelector(`.category-item[data-id="${this.currentCategory}"]`);
+            if (activeItem) activeItem.classList.add('active');
+        }
+    }
+    
+    highlightActiveTag() {
+        document.querySelectorAll('.tag').forEach(tag => {
+            tag.classList.remove('active');
+        });
+        
+        if (this.currentTag) {
+            document.querySelectorAll('.tag').forEach(tag => {
+                if (tag.textContent.includes(this.currentTag)) {
+                    tag.classList.add('active');
+                }
+            });
+        }
+    }
+    
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 }
 
 // 初始化应用
