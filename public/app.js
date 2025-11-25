@@ -128,16 +128,117 @@ class KnowledgeBase {
     
     async loadCategories() {
         try {
+            console.log('开始加载分类...');
             this.showCategoriesLoading();
             
-            this.categories = await this.cachedFetch('/api/categories');
-            console.log('加载的分类数据:', this.categories);
+            const response = await fetch('/api/categories');
+            console.log('分类API响应状态:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('分类API错误响应:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('分类API返回数据:', data);
+            
+            // 检查返回的数据结构
+            if (data && data.error) {
+                throw new Error(data.error + (data.details ? `: ${data.details}` : ''));
+            }
+            
+            if (!Array.isArray(data)) {
+                console.warn('分类API返回非数组数据:', data);
+                this.categories = [];
+            } else {
+                this.categories = data;
+            }
+            
             this.renderCategories();
             this.renderCategorySelects();
+            console.log('分类加载完成，数量:', this.categories.length);
         } catch (error) {
             console.error('加载分类失败:', error);
-            this.showError('加载分类失败: ' + error.message);
+            this.showCategoriesError(error.message);
         }
+    }
+
+    showCategoriesError(message) {
+        const container = document.getElementById('categoriesTree');
+        container.innerHTML = `
+            <div class="error-message">
+                <p>加载分类失败</p>
+                <p style="font-size: 0.875rem; opacity: 0.8;">${message}</p>
+                <button class="btn-secondary" onclick="knowledgeBase.loadCategories()" style="margin-top: 0.5rem;">
+                    重试加载
+                </button>
+            </div>
+        `;
+    }
+
+    // 在renderCategories方法中添加容错处理
+    renderCategories() {
+        const container = document.getElementById('categoriesTree');
+        
+        if (!container) {
+            console.error('分类容器未找到');
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        if (!this.categories || this.categories.length === 0) {
+            container.innerHTML = `
+                <div class="category-item">
+                    <span>暂无分类</span>
+                    <button class="btn-category-edit" onclick="knowledgeBase.showCategoryModal()" title="添加分类">➕</button>
+                </div>
+            `;
+            return;
+        }
+        
+        const renderCategory = (category, level = 0) => {
+            if (!category || typeof category !== 'object') {
+                console.warn('无效的分类数据:', category);
+                return;
+            }
+            
+            const div = document.createElement('div');
+            div.className = `category-item ${this.currentCategory === category.id ? 'active' : ''}`;
+            div.style.paddingLeft = `${level * 20 + 12}px`;
+            div.dataset.id = category.id;
+            div.innerHTML = `
+                <span>${this.escapeHtml(category.name || '未命名分类')}</span>
+                <div class="category-actions">
+                    <span class="category-count">${category.article_count || 0}</span>
+                    <button class="btn-category-edit" title="编辑分类">✏️</button>
+                </div>
+            `;
+            
+            // 分类点击事件
+            div.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-category-edit')) {
+                    e.stopPropagation();
+                    this.editCategory(category);
+                    return;
+                }
+                
+                this.currentCategory = category.id;
+                this.currentTag = null;
+                this.loadArticles(category.id);
+                this.highlightActiveCategory();
+            });
+            
+            container.appendChild(div);
+            
+            // 渲染子分类
+            if (category.children && Array.isArray(category.children) && category.children.length > 0) {
+                category.children.forEach(child => renderCategory(child, level + 1));
+            }
+        };
+        
+        this.categories.forEach(category => renderCategory(category));
     }
     
     async loadTags() {
