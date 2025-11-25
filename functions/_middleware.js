@@ -1,47 +1,72 @@
 export async function onRequest(context) {
-    const { request, env } = context;
+    const { request, env, next } = context;
     const url = new URL(request.url);
     const sessionKey = 'user-authenticated';
 
-    // 允许静态资源和API请求通过（除了需要认证的API）
+    console.log('中间件处理请求:', url.pathname, request.method);
+
+    // 允许静态资源和API请求通过
     if (url.pathname.startsWith('/api/') || 
         url.pathname.startsWith('/public/') ||
         url.pathname === '/sw.js' ||
-        url.pathname === '/manifest.json') {
+        url.pathname === '/manifest.json' ||
+        url.pathname === '/debug.html') {
         
-        // 检查API请求是否需要认证（除了登录和导出导入）
+        console.log('允许访问API或静态资源:', url.pathname);
+        
+        // 对于API请求，检查会话（除了登录接口）
         if (url.pathname.startsWith('/api/') && 
-            !url.pathname.includes('/api/auth/') &&
-            !url.pathname.includes('/api/export') &&
-            !url.pathname.includes('/api/import')) {
+            !url.pathname.includes('/api/auth/login')) {
             
             const session = await env.KV_NAMESPACE.get(sessionKey);
+            console.log('API请求会话状态:', session ? '已认证' : '未认证');
+            
             if (!session) {
+                console.log('API请求未认证，返回401');
                 return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
                     status: 401,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type'
+                    }
                 });
             }
         }
-        return await context.next();
+        
+        // 添加CORS头
+        const response = await next();
+        const newResponse = new Response(response.body, response);
+        newResponse.headers.set('Access-Control-Allow-Origin', '*');
+        newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+        
+        return newResponse;
     }
 
     // 检查会话
     const session = await env.KV_NAMESPACE.get(sessionKey);
+    console.log('页面请求会话状态:', session ? '已认证' : '未认证');
+
     if (session) {
-        return await context.next();
+        console.log('会话有效，允许访问页面');
+        return await next();
     }
 
     // 处理登录请求
     if (url.pathname === '/login' && request.method === 'POST') {
+        console.log('处理登录请求');
         const formData = await request.formData();
         const password = formData.get('password');
         
-        // 这里使用环境变量中的密码，你需要在Cloudflare Pages设置中添加 PASSWORD 环境变量
+        // 这里使用环境变量中的密码
         if (password === env.PASSWORD) {
+            console.log('密码正确，创建会话');
             await env.KV_NAMESPACE.put(sessionKey, 'true', { expirationTtl: 60 * 60 * 24 }); // 24小时过期
             return Response.redirect(url.origin);
         } else {
+            console.log('密码错误');
             return new Response(`
                 <!DOCTYPE html>
                 <html>
@@ -121,6 +146,7 @@ export async function onRequest(context) {
 
     // 显示登录页面
     if (!session && url.pathname !== '/login') {
+        console.log('显示登录页面');
         return new Response(`
             <!DOCTYPE html>
             <html>
@@ -191,5 +217,6 @@ export async function onRequest(context) {
         });
     }
 
-    return await context.next();
+    console.log('允许访问页面:', url.pathname);
+    return await next();
 }
