@@ -4,230 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人知识库</title>
-    
-    <!-- 强制预加载和正确路径 -->
-    <link rel="preload" href="/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/style.css"></noscript>
-    
+    <link rel="stylesheet" href="/style.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1a1a1a"/>
     
-    <!-- 内联关键CSS以防止FOUC -->
+    <!-- 预加载关键CSS -->
+    <link rel="preload" href="/style.css" as="style">
+    
+    <!-- 防止FOUC (Flash of Unstyled Content) -->
     <style>
-        /* 基础重置和变量 */
-        :root {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --bg-tertiary: #3d3d3d;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --accent-color: #4f46e5;
-            --accent-hover: #4338ca;
-            --border-color: #404040;
+        /* 基础样式，确保内容可见 */
+        body { 
+            margin: 0; 
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1a1a1a;
+            color: white;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-        
-        /* 加载动画 */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 骨架屏动画 */
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        .skeleton {
-            background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-tertiary) 50%, var(--bg-secondary) 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 0.25rem;
-        }
-        
-        .skeleton-text {
-            height: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        /* 基础布局 */
-        .app-container {
-            display: flex;
+        .app-container { 
+            display: flex; 
             min-height: 100vh;
-            width: 100%;
         }
-        
-        .sidebar {
-            width: 300px;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            padding: 1.5rem;
-            overflow-y: auto;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
+        .sidebar { 
+            width: 300px; 
+            background: #2d2d2d; 
+            padding: 1rem; 
         }
-        
-        .main-content {
-            flex: 1;
-            margin-left: 300px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+        .main-content { 
+            flex: 1; 
+            background: #1a1a1a; 
         }
-        
-        .content-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .articles-list {
-            flex: 1;
-            padding: 1.5rem;
-        }
-        
-        /* 基础组件样式 */
-        .btn-primary {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--accent-hover);
-        }
-        
-        .btn-secondary {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .btn-secondary:hover {
-            background-color: var(--bg-secondary);
-        }
-        
-        .category-item {
-            padding: 0.75rem;
-            margin: 0.25rem 0;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background-color 0.2s;
-        }
-        
-        .category-item:hover {
-            background-color: var(--bg-tertiary);
-        }
-        
-        .category-item.active {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .article-item {
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            background-color: var(--bg-secondary);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .article-item:hover {
-            transform: translateY(-2px);
-            border-color: var(--accent-color);
-        }
-        
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: relative;
-                width: 100%;
-                height: auto;
-                max-height: 40vh;
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-            
-            .app-container {
-                flex-direction: column;
-            }
-        }
-        
-        /* 错误状态 */
-        .error-message {
-            background-color: #ef4444;
-            color: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin: 1rem 0;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-secondary);
+        /* 隐藏元素直到JS初始化完成 */
+        [data-wait-for-js] { 
+            opacity: 0; 
+            transition: opacity 0.3s ease-in;
         }
     </style>
 </head>
 <body>
-    <!-- 加载状态 -->
-    <div id="loadingState" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column;">
-        <div style="width: 50px; height: 50px; border: 3px solid #333; border-top: 3px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
-        <p style="color: white; font-size: 1.1rem;">加载知识库...</p>
-        <p style="color: #b0b0b0; font-size: 0.9rem; margin-top: 0.5rem;" id="loadingStatus">初始化中</p>
+    <!-- 添加加载状态 -->
+    <div id="loadingState" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 9999;">
+        <div style="text-align: center;">
+            <div style="width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+            <p>加载知识库...</p>
+        </div>
     </div>
 
-    <div class="app-container" style="display: none;" id="mainApp">
+    <div class="app-container" data-wait-for-js style="display: none;">
         <!-- 侧边栏 -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1 style="margin-bottom: 1rem;">知识库</h1>
-                <button class="btn-primary" id="newArticleBtn" style="width: 100%;">新建文章</button>
+                <h1>知识库</h1>
+                <button class="btn-primary" id="newArticleBtn">新建文章</button>
             </div>
             
             <!-- 搜索框 -->
-            <div class="search-box" style="margin: 1.5rem 0;">
-                <input type="text" id="searchInput" placeholder="搜索文章..." style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索文章...">
             </div>
             
             <!-- 分类树 -->
-            <div class="categories-section" style="margin-bottom: 1.5rem;">
-                <h3 style="margin-bottom: 1rem; color: var(--text-secondary);">分类</h3>
+            <div class="categories-section">
+                <h3>分类</h3>
                 <div id="categoriesTree">
                     <div class="category-item">
                         <div class="skeleton skeleton-text" style="width: 80%"></div>
@@ -236,23 +73,23 @@
                         <div class="skeleton skeleton-text" style="width: 60%"></div>
                     </div>
                 </div>
-                <button class="btn-secondary" id="newCategoryBtn" style="width: 100%; margin-top: 1rem;">新建分类</button>
+                <button class="btn-secondary" id="newCategoryBtn">新建分类</button>
             </div>
             
             <!-- 标签云 -->
-            <div class="tags-section" style="margin-bottom: 1.5rem;">
-                <h3 style="margin-bottom: 1rem; color: var(--text-secondary);">标签</h3>
+            <div class="tags-section">
+                <h3>标签</h3>
                 <div id="tagsCloud">
-                    <span class="skeleton" style="display: inline-block; width: 60px; height: 24px; border-radius: 12px; margin: 0.25rem;"></span>
-                    <span class="skeleton" style="display: inline-block; width: 80px; height: 24px; border-radius: 12px; margin: 0.25rem;"></span>
-                    <span class="skeleton" style="display: inline-block; width: 70px; height: 24px; border-radius: 12px; margin: 0.25rem;"></span>
+                    <span class="tag skeleton" style="width: 60px;"></span>
+                    <span class="tag skeleton" style="width: 80px;"></span>
+                    <span class="tag skeleton" style="width: 70px;"></span>
                 </div>
             </div>
             
             <!-- 数据管理 -->
-            <div class="data-management" style="margin-top: auto;">
-                <button class="btn-secondary" id="exportBtn" style="width: 100%; margin-bottom: 0.5rem;">导出数据</button>
-                <button class="btn-secondary" id="importBtn" style="width: 100%;">导入数据</button>
+            <div class="data-management">
+                <button class="btn-secondary" id="exportBtn">导出数据</button>
+                <button class="btn-secondary" id="importBtn">导入数据</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;">
             </div>
         </div>
@@ -269,100 +106,173 @@
             <!-- 文章列表 -->
             <div class="articles-list" id="articlesList">
                 <div class="article-item">
-                    <div class="skeleton skeleton-text" style="width: 70%; margin-bottom: 1rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 50%; margin-bottom: 1rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 90%; margin-bottom: 0.5rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 70%"></div>
+                    <div class="skeleton skeleton-text" style="width: 50%"></div>
+                    <div class="skeleton skeleton-text" style="width: 90%"></div>
+                    <div class="skeleton skeleton-text" style="width: 90%"></div>
                 </div>
                 <div class="article-item">
-                    <div class="skeleton skeleton-text" style="width: 60%; margin-bottom: 1rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 40%; margin-bottom: 1rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 85%; margin-bottom: 0.5rem;"></div>
-                    <div class="skeleton skeleton-text" style="width: 85%;"></div>
+                    <div class="skeleton skeleton-text" style="width: 60%"></div>
+                    <div class="skeleton skeleton-text" style="width: 40%"></div>
+                    <div class="skeleton skeleton-text" style="width: 85%"></div>
+                    <div class="skeleton skeleton-text" style="width: 85%"></div>
                 </div>
             </div>
             
             <!-- 文章编辑器 -->
-            <div class="article-editor" id="articleEditor" style="display: none; padding: 1.5rem; flex: 1; flex-direction: column;">
-                <div class="editor-header" style="margin-bottom: 1.5rem;">
-                    <input type="text" id="articleTitle" placeholder="文章标题" style="width: 100%; padding: 1rem; font-size: 1.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 1rem;">
-                    <div class="editor-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <select id="articleCategory" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-secondary); color: var(--text-primary); min-width: 150px;">
+            <div class="article-editor" id="articleEditor" style="display: none;">
+                <div class="editor-header">
+                    <input type="text" id="articleTitle" placeholder="文章标题">
+                    <div class="editor-actions">
+                        <select id="articleCategory">
                             <option value="">选择分类</option>
                         </select>
-                        <input type="text" id="articleTags" placeholder="标签（用逗号分隔）" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-secondary); color: var(--text-primary); min-width: 200px;">
+                        <input type="text" id="articleTags" placeholder="标签（用逗号分隔）">
                         <button class="btn-primary" id="saveArticleBtn">保存</button>
                         <button class="btn-secondary" id="cancelEditBtn">取消</button>
                     </div>
                 </div>
-                <textarea id="articleContent" placeholder="在此输入文章内容..." style="flex: 1; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; resize: none;"></textarea>
+                <textarea id="articleContent" placeholder="在此输入文章内容..."></textarea>
             </div>
         </div>
     </div>
 
-    <!-- 模态框 -->
-    <div class="modal" id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px; border: 1px solid var(--border-color);">
-            <h3 id="categoryModalTitle" style="margin-bottom: 1rem;">新建分类</h3>
-            <input type="text" id="categoryName" placeholder="分类名称" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
-            <select id="categoryParent" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
+    <!-- 分类编辑模态框 -->
+    <div class="modal" id="categoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="categoryModalTitle">新建分类</h3>
+            <input type="text" id="categoryName" placeholder="分类名称">
+            <select id="categoryParent">
                 <option value="">无父分类（顶级分类）</option>
             </select>
-            <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <div class="modal-actions">
                 <button class="btn-primary" id="saveCategoryBtn">保存</button>
                 <button class="btn-secondary" id="cancelCategoryBtn">取消</button>
             </div>
         </div>
     </div>
 
-    <!-- 编辑分类模态框 -->
-    <div class="modal" id="editCategoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px; border: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 1rem;">编辑分类</h3>
+    <!-- 分类编辑模态框 -->
+    <div class="modal" id="editCategoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3>编辑分类</h3>
             <input type="hidden" id="editCategoryId">
-            <input type="text" id="editCategoryName" placeholder="分类名称" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
-            <select id="editCategoryParent" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
+            <input type="text" id="editCategoryName" placeholder="分类名称">
+            <select id="editCategoryParent">
                 <option value="">无父分类（顶级分类）</option>
             </select>
-            <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <div class="modal-actions">
                 <button class="btn-primary" id="updateCategoryBtn">更新</button>
-                <button class="btn-danger" id="deleteCategoryBtn" style="background: #ef4444; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">删除</button>
+                <button class="btn-danger" id="deleteCategoryBtn">删除</button>
                 <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
             </div>
         </div>
     </div>
 
+    <!-- 关键JavaScript -->
     <script>
-        // 基础初始化脚本
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM加载完成');
-            updateLoadingStatus('加载应用脚本...');
-            
-            // 设置超时，如果JS未加载完成，强制显示应用
-            setTimeout(function() {
-                const loadingState = document.getElementById('loadingState');
-                const mainApp = document.getElementById('mainApp');
-                
-                if (loadingState) loadingState.style.display = 'none';
-                if (mainApp) mainApp.style.display = 'flex';
-            }, 5000);
-        });
+        // 基础样式动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .skeleton {
+                background: linear-gradient(90deg, #2d2d2d 25%, #3d3d3d 50%, #2d2d2d 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+                border-radius: 0.25rem;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+            .skeleton-text {
+                height: 1rem;
+                margin-bottom: 0.5rem;
+            }
+        `;
+        document.head.appendChild(style);
         
-        function updateLoadingStatus(message) {
-            const statusElement = document.getElementById('loadingStatus');
-            if (statusElement) {
-                statusElement.textContent = message;
+        // 显示主应用，隐藏加载状态
+        function showApp() {
+            const loadingState = document.getElementById('loadingState');
+            const appContainer = document.querySelector('.app-container');
+            
+            if (loadingState) loadingState.style.display = 'none';
+            if (appContainer) {
+                appContainer.style.display = 'flex';
+                // 触发重绘以确保过渡效果
+                appContainer.offsetHeight;
+                appContainer.style.opacity = '1';
             }
         }
         
-        // 全局错误处理
+        // 如果JavaScript加载失败，显示错误
         window.addEventListener('error', function(e) {
             console.error('全局错误:', e.error);
-            updateLoadingStatus('加载失败: ' + (e.error ? e.error.message : '未知错误'));
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.innerHTML = `
+                    <div style="text-align: center; color: #ef4444;">
+                        <h3>加载失败</h3>
+                        <p>${e.error && e.error.message ? e.error.message : '未知错误'}</p>
+                        <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem;">重新加载</button>
+                    </div>
+                `;
+            }
+        });
+        
+        // 确保应用在JS加载后显示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            // 设置超时，如果JS未加载完成，强制显示应用
+            setTimeout(showApp, 3000);
         });
     </script>
-
-    <!-- 加载主应用JS -->
-    <script src="/app.js" onload="updateLoadingStatus('初始化应用...')" onerror="updateLoadingStatus('JS加载失败')"></script>
+    
+    <!-- 主应用JavaScript -->
+    <script src="/app.js"></script>
+    
+    <!-- 备用方案：如果app.js加载失败 -->
+    <script>
+        // 检查app.js是否成功加载
+        window.addEventListener('load', function() {
+            // 如果KnowledgeBase未定义，使用备用方案
+            setTimeout(function() {
+                if (typeof KnowledgeBase === 'undefined') {
+                    console.error('KnowledgeBase未定义，使用备用方案');
+                    loadFallbackApp();
+                } else {
+                    console.log('KnowledgeBase已定义，应用正常加载');
+                    showApp();
+                }
+            }, 1000);
+        });
+        
+        function loadFallbackApp() {
+            // 简单的备用应用
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                appContainer.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; width: 100%;">
+                        <h2>知识库加载失败</h2>
+                        <p>JavaScript应用未能正确加载。</p>
+                        <div style="margin: 2rem 0;">
+                            <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; margin: 0.5rem;">重新加载页面</button>
+                            <button onclick="checkDebugPage()" style="background: #6b7280; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; margin: 0.5rem;">检查API状态</button>
+                        </div>
+                        <div id="fallbackInfo" style="margin-top: 2rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;"></div>
+                    </div>
+                `;
+                showApp();
+            }
+        }
+        
+        function checkDebugPage() {
+            window.open('/debug.html', '_blank');
+        }
+    </script>
 </body>
 </html>
