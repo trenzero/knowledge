@@ -38,12 +38,6 @@
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
-
-
-<!-- 在body开始标签后添加移动端菜单按钮 -->
-<button class="mobile-menu-toggle" id="mobileMenuToggle" style="display: none;">
-    ☰
-</button>
         }
         
         /* 加载动画 */
@@ -212,6 +206,10 @@
 </head>
 <body>
     <!-- 加载状态 -->
+<!-- 在body开始标签后添加移动端菜单按钮 -->
+<button class="mobile-menu-toggle" id="mobileMenuToggle" style="display: none;">
+    ☰
+</button>
     <div id="loadingState" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column;">
         <div style="width: 50px; height: 50px; border: 3px solid #333; border-top: 3px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
         <p style="color: white; font-size: 1.1rem;">加载知识库...</p>
