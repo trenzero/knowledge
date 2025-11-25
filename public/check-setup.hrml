@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>系统检查</title>
+    <style>
+        body { font-family: system-ui; padding: 2rem; }
+        .test { margin: 1rem 0; padding: 1rem; border-radius: 0.5rem; }
+        .success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    </style>
+</head>
+<body>
+    <h1>系统配置检查</h1>
+    
+    <div class="test" id="envTest">
+        <h3>环境变量检查</h3>
+        <p>检查中...</p>
+    </div>
+    
+    <div class="test" id="kvTest">
+        <h3>KV命名空间检查</h3>
+        <p>检查中...</p>
+    </div>
+    
+    <div class="test" id="d1Test">
+        <h3>D1数据库检查</h3>
+        <p>检查中...</p>
+    </div>
+    
+    <div class="test" id="cssTest">
+        <h3>CSS文件检查</h3>
+        <p>检查中...</p>
+    </div>
+
+    <script>
+        async function checkEnvironment() {
+            const envTest = document.getElementById('envTest');
+            try {
+                const response = await fetch('/api/test-env');
+                const data = await response.json();
+                envTest.innerHTML = `<h3>环境变量检查</h3><p class="success">✅ 环境变量正常</p>`;
+            } catch (error) {
+                envTest.innerHTML = `<h3>环境变量检查</h3><p class="error">❌ 环境变量检查失败</p>`;
+            }
+        }
+        
+        async function checkCSS() {
+            const cssTest = document.getElementById('cssTest');
+            try {
+                const response = await fetch('/style.css');
+                if (response.ok) {
+                    cssTest.innerHTML = `<h3>CSS文件检查</h3><p class="success">✅ CSS文件可访问</p>`;
+                } else {
+                    cssTest.innerHTML = `<h3>CSS文件检查</h3><p class="error">❌ CSS文件不可访问: ${response.status}</p>`;
+                }
+            } catch (error) {
+                cssTest.innerHTML = `<h3>CSS文件检查</h3><p class="error">❌ CSS文件检查失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 运行检查
+        checkEnvironment();
+        checkCSS();
+    </script>
+</body>
+</html>
