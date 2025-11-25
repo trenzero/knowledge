@@ -1,15 +1,55 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人知识库</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1a1a1a"/>
+    
+    <!-- 预加载关键CSS -->
+    <link rel="preload" href="/style.css" as="style">
+    
+    <!-- 防止FOUC (Flash of Unstyled Content) -->
+    <style>
+        /* 基础样式，确保内容可见 */
+        body { 
+            margin: 0; 
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        .app-container { 
+            display: flex; 
+            min-height: 100vh;
+        }
+        .sidebar { 
+            width: 300px; 
+            background: #2d2d2d; 
+            padding: 1rem; 
+        }
+        .main-content { 
+            flex: 1; 
+            background: #1a1a1a; 
+        }
+        /* 隐藏元素直到JS初始化完成 */
+        [data-wait-for-js] { 
+            opacity: 0; 
+            transition: opacity 0.3s ease-in;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
+    <!-- 添加加载状态 -->
+    <div id="loadingState" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 9999;">
+        <div style="text-align: center;">
+            <div style="width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+            <p>加载知识库...</p>
+        </div>
+    </div>
+
+    <div class="app-container" data-wait-for-js style="display: none;">
         <!-- 侧边栏 -->
         <div class="sidebar">
             <div class="sidebar-header">
@@ -25,14 +65,25 @@
             <!-- 分类树 -->
             <div class="categories-section">
                 <h3>分类</h3>
-                <div id="categoriesTree"></div>
+                <div id="categoriesTree">
+                    <div class="category-item">
+                        <div class="skeleton skeleton-text" style="width: 80%"></div>
+                    </div>
+                    <div class="category-item">
+                        <div class="skeleton skeleton-text" style="width: 60%"></div>
+                    </div>
+                </div>
                 <button class="btn-secondary" id="newCategoryBtn">新建分类</button>
             </div>
             
             <!-- 标签云 -->
             <div class="tags-section">
                 <h3>标签</h3>
-                <div id="tagsCloud"></div>
+                <div id="tagsCloud">
+                    <span class="tag skeleton" style="width: 60px;"></span>
+                    <span class="tag skeleton" style="width: 80px;"></span>
+                    <span class="tag skeleton" style="width: 70px;"></span>
+                </div>
             </div>
             
             <!-- 数据管理 -->
@@ -48,14 +99,23 @@
             <div class="content-header">
                 <h2 id="contentTitle">所有文章</h2>
                 <div class="header-actions">
-                    <button class="btn-secondary" id="toggleDarkMode">切换主题</button>
+                    <button class="btn-secondary" id="toggleDarkMode">切换浅色</button>
                 </div>
             </div>
             
             <!-- 文章列表 -->
             <div class="articles-list" id="articlesList">
-                <div class="empty-state">
-                    <p>选择分类或标签查看文章，或创建新文章</p>
+                <div class="article-item">
+                    <div class="skeleton skeleton-text" style="width: 70%"></div>
+                    <div class="skeleton skeleton-text" style="width: 50%"></div>
+                    <div class="skeleton skeleton-text" style="width: 90%"></div>
+                    <div class="skeleton skeleton-text" style="width: 90%"></div>
+                </div>
+                <div class="article-item">
+                    <div class="skeleton skeleton-text" style="width: 60%"></div>
+                    <div class="skeleton skeleton-text" style="width: 40%"></div>
+                    <div class="skeleton skeleton-text" style="width: 85%"></div>
+                    <div class="skeleton skeleton-text" style="width: 85%"></div>
                 </div>
             </div>
             
@@ -92,21 +152,127 @@
         </div>
     </div>
 
-<div class="modal" id="editCategoryModal" style="display: none;">
-    <div class="modal-content">
-        <h3>编辑分类</h3>
-        <input type="hidden" id="editCategoryId">
-        <input type="text" id="editCategoryName" placeholder="分类名称">
-        <select id="editCategoryParent">
-            <option value="">无父分类（顶级分类）</option>
-        </select>
-        <div class="modal-actions">
-            <button class="btn-primary" id="updateCategoryBtn">更新</button>
-            <button class="btn-danger" id="deleteCategoryBtn">删除</button>
-            <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
+    <!-- 分类编辑模态框 -->
+    <div class="modal" id="editCategoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3>编辑分类</h3>
+            <input type="hidden" id="editCategoryId">
+            <input type="text" id="editCategoryName" placeholder="分类名称">
+            <select id="editCategoryParent">
+                <option value="">无父分类（顶级分类）</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn-primary" id="updateCategoryBtn">更新</button>
+                <button class="btn-danger" id="deleteCategoryBtn">删除</button>
+                <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
+            </div>
         </div>
     </div>
-</div>
-    <script src="app.js"></script>
+
+    <!-- 关键JavaScript -->
+    <script>
+        // 基础样式动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .skeleton {
+                background: linear-gradient(90deg, #2d2d2d 25%, #3d3d3d 50%, #2d2d2d 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+                border-radius: 0.25rem;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+            .skeleton-text {
+                height: 1rem;
+                margin-bottom: 0.5rem;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 显示主应用，隐藏加载状态
+        function showApp() {
+            const loadingState = document.getElementById('loadingState');
+            const appContainer = document.querySelector('.app-container');
+            
+            if (loadingState) loadingState.style.display = 'none';
+            if (appContainer) {
+                appContainer.style.display = 'flex';
+                // 触发重绘以确保过渡效果
+                appContainer.offsetHeight;
+                appContainer.style.opacity = '1';
+            }
+        }
+        
+        // 如果JavaScript加载失败，显示错误
+        window.addEventListener('error', function(e) {
+            console.error('全局错误:', e.error);
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.innerHTML = `
+                    <div style="text-align: center; color: #ef4444;">
+                        <h3>加载失败</h3>
+                        <p>${e.error && e.error.message ? e.error.message : '未知错误'}</p>
+                        <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem;">重新加载</button>
+                    </div>
+                `;
+            }
+        });
+        
+        // 确保应用在JS加载后显示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            // 设置超时，如果JS未加载完成，强制显示应用
+            setTimeout(showApp, 3000);
+        });
+    </script>
+    
+    <!-- 主应用JavaScript -->
+    <script src="/app.js"></script>
+    
+    <!-- 备用方案：如果app.js加载失败 -->
+    <script>
+        // 检查app.js是否成功加载
+        window.addEventListener('load', function() {
+            // 如果KnowledgeBase未定义，使用备用方案
+            setTimeout(function() {
+                if (typeof KnowledgeBase === 'undefined') {
+                    console.error('KnowledgeBase未定义，使用备用方案');
+                    loadFallbackApp();
+                } else {
+                    console.log('KnowledgeBase已定义，应用正常加载');
+                    showApp();
+                }
+            }, 1000);
+        });
+        
+        function loadFallbackApp() {
+            // 简单的备用应用
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                appContainer.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; width: 100%;">
+                        <h2>知识库加载失败</h2>
+                        <p>JavaScript应用未能正确加载。</p>
+                        <div style="margin: 2rem 0;">
+                            <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; margin: 0.5rem;">重新加载页面</button>
+                            <button onclick="checkDebugPage()" style="background: #6b7280; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; margin: 0.5rem;">检查API状态</button>
+                        </div>
+                        <div id="fallbackInfo" style="margin-top: 2rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;"></div>
+                    </div>
+                `;
+                showApp();
+            }
+        }
+        
+        function checkDebugPage() {
+            window.open('/debug.html', '_blank');
+        }
+    </script>
 </body>
 </html>
