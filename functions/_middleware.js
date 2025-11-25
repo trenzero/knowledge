@@ -11,6 +11,7 @@ export async function onRequest(context) {
         url.pathname === '/sw.js' ||
         url.pathname === '/manifest.json' ||
         url.pathname === '/debug.html' ||
+        url.pathname === '/check-setup.html' ||
         url.pathname === '/diagnose.html') {
         
         console.log('允许访问静态资源或API:', url.pathname);
