@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>首页问题诊断</title>
+    <style>
+        body { font-family: system-ui; padding: 2rem; background: #1a1a1a; color: white; }
+        .test-section { background: #2d2d2d; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem; }
+        button { background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin: 0.5rem; }
+        pre { background: #1a1a1a; padding: 1rem; border-radius: 0.5rem; overflow: auto; max-height: 300px; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>首页问题诊断</h1>
+    
+    <div class="test-section">
+        <h3>1. 检查JavaScript控制台错误</h3>
+        <button onclick="checkConsoleErrors()">检查控制台错误</button>
+        <div id="consoleResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 模拟首页加载流程</h3>
+        <button onclick="simulateHomepageLoad()">模拟首页加载</button>
+        <div id="simulationResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 检查认证状态</h3>
+        <button onclick="checkAuthStatus()">检查认证</button>
+        <div id="authResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 检查API访问</h3>
+        <button onclick="testAPIAccess()">测试API访问</button>
+        <div id="apiResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. 检查首页HTML元素</h3>
+        <button onclick="checkHomepageElements()">检查元素</button>
+        <div id="elementResults"></div>
+    </div>
+
+    <script>
+        function checkConsoleErrors() {
+            const results = document.getElementById('consoleResults');
+            results.innerHTML = `
+                <p>请打开浏览器开发者工具 (F12)，查看 Console 标签页是否有红色错误信息。</p>
+                <p>如果有错误，请截图或复制错误信息。</p>
+            `;
+            
+            // 模拟一些可能出现的错误
+            try {
+                // 检查是否有可能导致错误的代码
+                if (typeof KnowledgeBase === 'undefined') {
+                    results.innerHTML += `<p class="error">❌ KnowledgeBase 类未定义</p>`;
+                } else {
+                    results.innerHTML += `<p class="success">✅ KnowledgeBase 类已定义</p>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<p class="error">❌ 检查过程中出错: ${error.message}</p>`;
+            }
+        }
+
+        async function simulateHomepageLoad() {
+            const results = document.getElementById('simulationResults');
+            results.innerHTML = '<p>开始模拟首页加载流程...</p>';
+            
+            const steps = [
+                { name: 'DOMContentLoaded 事件', check: () => true },
+                { name: 'KnowledgeBase 构造函数', check: () => typeof KnowledgeBase !== 'undefined' },
+                { name: 'init() 方法调用', check: () => {
+                    try {
+                        const kb = new KnowledgeBase();
+                        return typeof kb.init === 'function';
+                    } catch (e) {
+                        return false;
+                    }
+                }},
+                { name: 'API 调用权限', check: async () => {
+                    try {
+                        const response = await fetch('/api/categories');
+                        return response.ok;
+                    } catch (e) {
+                        return false;
+                    }
+                }},
+                { name: '数据渲染', check: () => {
+                    const categoriesTree = document.getElementById('categoriesTree');
+                    const articlesList = document.getElementById('articlesList');
+                    return categoriesTree && articlesList;
+                }}
+            ];
+            
+            for (const step of steps) {
+                const success = typeof step.check === 'function' ? await step.check() : step.check;
+                results.innerHTML += `
+                    <p class="${success ? 'success' : 'error'}">
+                        ${success ? '✅' : '❌'} ${step.name}
+                    </p>
+                `;
+                
+                if (!success) {
+                    results.innerHTML += `<p class="warning">在步骤 "${step.name}" 失败</p>`;
+                    break;
+                }
+                
+                // 添加延迟以便观察
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
+        async function checkAuthStatus() {
+            const results = document.getElementById('authResults');
+            results.innerHTML = '<p>检查认证状态...</p>';
+            
+            try {
+                // 尝试访问需要认证的API
+                const response = await fetch('/api/categories');
+                
+                if (response.status === 401) {
+                    results.innerHTML += `<p class="error">❌ 未认证 (401 Unauthorized)</p>`;
+                    results.innerHTML += `
+                        <p>可能的原因：</p>
+                        <ul>
+                            <li>会话已过期</li>
+                            <li>未正确登录</li>
+                            <li>KV命名空间配置错误</li>
+                        </ul>
+                        <p><a href="/login" target="_blank">尝试重新登录</a></p>
+                    `;
+                } else if (response.ok) {
+                    results.innerHTML += `<p class="success">✅ 已认证</p>`;
+                } else {
+                    results.innerHTML += `<p class="error">❌ 其他错误: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<p class="error">❌ 检查认证时出错: ${error.message}</p>`;
+            }
+        }
+
+        async function testAPIAccess() {
+            const results = document.getElementById('apiResults');
+            results.innerHTML = '<p>测试API访问...</p>';
+            
+            const endpoints = [
+                '/api/categories',
+                '/api/tags', 
+                '/api/articles'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint);
+                    const data = await response.json();
+                    
+                    results.innerHTML += `
+                        <p class="${response.ok ? 'success' : 'error'}">
+                            ${response.ok ? '✅' : '❌'} ${endpoint}: ${response.status} ${response.statusText}
+                        </p>
+                    `;
+                    
+                    if (!response.ok) {
+                        results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `
+                        <p class="error">❌ ${endpoint}: ${error.message}</p>
+                    `;
+                }
+            }
+        }
+
+        function checkHomepageElements() {
+            const results = document.getElementById('elementResults');
+            results.innerHTML = '<p>检查首页HTML元素...</p>';
+            
+            const elements = [
+                'categoriesTree',
+                'articlesList', 
+                'articleEditor',
+                'newArticleBtn',
+                'searchInput'
+            ];
+            
+            let allFound = true;
+            
+            for (const elementId of elements) {
+                const element = document.getElementById(elementId);
+                const found = !!element;
+                allFound = allFound && found;
+                
+                results.innerHTML += `
+                    <p class="${found ? 'success' : 'error'}">
+                        ${found ? '✅' : '❌'} #${elementId}
+                    </p>
+                `;
+            }
+            
+            if (allFound) {
+                results.innerHTML += `<p class="success">✅ 所有必需元素都存在</p>`;
+            } else {
+                results.innerHTML += `
+                    <p class="error">❌ 某些元素缺失，可能是HTML未正确加载或JavaScript错误阻止了渲染</p>
+                    <p>建议：</p>
+                    <ul>
+                        <li>检查浏览器控制台错误</li>
+                        <li>验证HTML文件是否正确部署</li>
+                        <li>检查网络请求是否被阻止</li>
+                    </ul>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
