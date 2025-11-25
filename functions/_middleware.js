@@ -3,55 +3,27 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const sessionKey = 'user-authenticated';
 
-    console.log('中间件处理请求:', url.pathname, request.method);
+    console.log('中间件处理:', url.pathname);
 
     // 允许静态资源和API请求通过
     if (url.pathname.startsWith('/api/') || 
         url.pathname.startsWith('/public/') ||
         url.pathname === '/sw.js' ||
         url.pathname === '/manifest.json' ||
-        url.pathname === '/debug.html') {
+        url.pathname === '/debug.html' ||
+        url.pathname === '/diagnose.html') {
         
-        console.log('允许访问API或静态资源:', url.pathname);
-        
-        // 对于API请求，检查会话（除了登录接口）
-        if (url.pathname.startsWith('/api/') && 
-            !url.pathname.includes('/api/auth/login')) {
-            
-            const session = await env.KV_NAMESPACE.get(sessionKey);
-            console.log('API请求会话状态:', session ? '已认证' : '未认证');
-            
-            if (!session) {
-                console.log('API请求未认证，返回401');
-                return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-                    status: 401,
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type'
-                    }
-                });
-            }
-        }
-        
-        // 添加CORS头
-        const response = await next();
-        const newResponse = new Response(response.body, response);
-        newResponse.headers.set('Access-Control-Allow-Origin', '*');
-        newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-        
-        return newResponse;
+        console.log('允许访问静态资源或API:', url.pathname);
+        return await context.next();
     }
 
     // 检查会话
     const session = await env.KV_NAMESPACE.get(sessionKey);
-    console.log('页面请求会话状态:', session ? '已认证' : '未认证');
+    console.log('会话状态:', session ? '已认证' : '未认证');
 
     if (session) {
-        console.log('会话有效，允许访问页面');
-        return await next();
+        console.log('会话有效，允许访问');
+        return await context.next();
     }
 
     // 处理登录请求
@@ -60,8 +32,38 @@ export async function onRequest(context) {
         const formData = await request.formData();
         const password = formData.get('password');
         
-        // 这里使用环境变量中的密码
-        if (password === env.PASSWORD) {
+        // 使用环境变量中的密码
+        const expectedPassword = env.PASSWORD;
+        console.log('密码验证:', { 
+            provided: password ? '***' : '空', 
+            expected: expectedPassword ? '***' : '未设置' 
+        });
+        
+        if (!expectedPassword) {
+            console.error('环境变量PASSWORD未设置');
+            return new Response(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>系统配置错误</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { font-family: system-ui; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                        .error-container { background: #2d2d2d; padding: 2rem; border-radius: 0.5rem; border: 1px solid #404040; text-align: center; }
+                        h2 { color: #ef4444; }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <h2>系统配置错误</h2>
+                        <p>管理员未设置访问密码，请联系系统管理员。</p>
+                    </div>
+                </body>
+                </html>
+            `, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        }
+        
+        if (password === expectedPassword) {
             console.log('密码正确，创建会话');
             await env.KV_NAMESPACE.put(sessionKey, 'true', { expirationTtl: 60 * 60 * 24 }); // 24小时过期
             return Response.redirect(url.origin);
@@ -107,6 +109,7 @@ export async function onRequest(context) {
                             border: 1px solid #404040;
                             background: #1a1a1a;
                             color: white;
+                            font-size: 1rem;
                         }
                         button {
                             padding: 0.75rem;
@@ -116,6 +119,7 @@ export async function onRequest(context) {
                             color: white;
                             cursor: pointer;
                             font-weight: 500;
+                            font-size: 1rem;
                         }
                         button:hover {
                             background: #4338ca;
@@ -131,7 +135,7 @@ export async function onRequest(context) {
                     <div class="login-container">
                         <h2>知识库登录</h2>
                         <form method="post" action="/login">
-                            <input type="password" name="password" placeholder="请输入访问密码" required>
+                            <input type="password" name="password" placeholder="请输入访问密码" required autofocus>
                             <button type="submit">进入知识库</button>
                             <div class="error">密码错误，请重试</div>
                         </form>
@@ -187,6 +191,7 @@ export async function onRequest(context) {
                         border: 1px solid #404040;
                         background: #1a1a1a;
                         color: white;
+                        font-size: 1rem;
                     }
                     button {
                         padding: 0.75rem;
@@ -196,6 +201,7 @@ export async function onRequest(context) {
                         color: white;
                         cursor: pointer;
                         font-weight: 500;
+                        font-size: 1rem;
                     }
                     button:hover {
                         background: #4338ca;
@@ -206,7 +212,7 @@ export async function onRequest(context) {
                 <div class="login-container">
                     <h2>知识库登录</h2>
                     <form method="post" action="/login">
-                        <input type="password" name="password" placeholder="请输入访问密码" required>
+                        <input type="password" name="password" placeholder="请输入访问密码" required autofocus>
                         <button type="submit">进入知识库</button>
                     </form>
                 </div>
@@ -217,6 +223,5 @@ export async function onRequest(context) {
         });
     }
 
-    console.log('允许访问页面:', url.pathname);
-    return await next();
+    return await context.next();
 }
