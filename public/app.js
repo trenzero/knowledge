@@ -54,18 +54,27 @@ class KnowledgeBase {
     
     async loadCategories() {
         try {
+            console.log('正在加载分类...');
             const response = await fetch('/api/categories');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             this.categories = await response.json();
+            console.log('加载的分类数据:', this.categories);
             this.renderCategories();
             this.renderCategorySelects();
         } catch (error) {
             console.error('加载分类失败:', error);
+            alert('加载分类失败: ' + error.message);
         }
     }
     
     async loadTags() {
         try {
             const response = await fetch('/api/tags');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             this.tags = await response.json();
             this.renderTags();
         } catch (error) {
@@ -84,8 +93,14 @@ class KnowledgeBase {
             if (params.toString()) url += '?' + params.toString();
             
             const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const articles = await response.json();
             this.renderArticles(articles);
+            
+            // 更新内容标题
+            this.updateContentTitle(categoryId, tag);
         } catch (error) {
             console.error('加载文章失败:', error);
         }
@@ -93,13 +108,20 @@ class KnowledgeBase {
     
     renderCategories() {
         const container = document.getElementById('categoriesTree');
+        container.innerHTML = '';
+        
+        if (this.categories.length === 0) {
+            container.innerHTML = '<div class="category-item">暂无分类</div>';
+            return;
+        }
         
         const renderCategory = (category, level = 0) => {
             const div = document.createElement('div');
             div.className = `category-item ${this.currentCategory === category.id ? 'active' : ''}`;
             div.style.paddingLeft = `${level * 20 + 12}px`;
+            div.dataset.id = category.id;
             div.innerHTML = `
-                <span>${category.name}</span>
+                <span>${this.escapeHtml(category.name)}</span>
                 <span class="category-count">${category.article_count || 0}</span>
             `;
             
@@ -113,12 +135,11 @@ class KnowledgeBase {
             container.appendChild(div);
             
             // 渲染子分类
-            if (category.children) {
+            if (category.children && category.children.length > 0) {
                 category.children.forEach(child => renderCategory(child, level + 1));
             }
         };
         
-        container.innerHTML = '';
         this.categories.forEach(category => renderCategory(category));
     }
     
@@ -126,10 +147,15 @@ class KnowledgeBase {
         const container = document.getElementById('tagsCloud');
         container.innerHTML = '';
         
+        if (this.tags.length === 0) {
+            container.innerHTML = '<div>暂无标签</div>';
+            return;
+        }
+        
         this.tags.forEach(tag => {
             const span = document.createElement('span');
-            span.className = 'tag';
-            span.textContent = `${tag.name} (${tag.count})`;
+            span.className = `tag ${this.currentTag === tag.name ? 'active' : ''}`;
+            span.textContent = `${tag.name} (${tag.count || 0})`;
             
             span.addEventListener('click', () => {
                 this.currentTag = tag.name;
@@ -149,6 +175,7 @@ class KnowledgeBase {
             container.innerHTML = `
                 <div class="empty-state">
                     <p>没有找到文章</p>
+                    <button class="btn-primary" onclick="knowledgeBase.showEditor()">创建第一篇文章</button>
                 </div>
             `;
             return;
@@ -158,14 +185,16 @@ class KnowledgeBase {
             <div class="article-item" data-id="${article.id}">
                 <h3>${this.escapeHtml(article.title)}</h3>
                 <div class="article-meta">
-                    <span>${new Date(article.created_at).toLocaleDateString()}</span>
+                    <span>${new Date(article.created_at).toLocaleDateString('zh-CN')}</span>
                     <span>${article.category_name || '未分类'}</span>
                 </div>
+                ${article.tags ? `
                 <div class="article-tags">
-                    ${article.tags ? article.tags.split(',').map(tag => 
-                        `<span class="article-tag">${this.escapeHtml(tag)}</span>`
-                    ).join('') : ''}
+                    ${article.tags.split(',').map(tag => 
+                        `<span class="article-tag">${this.escapeHtml(tag.trim())}</span>`
+                    ).join('')}
                 </div>
+                ` : ''}
                 <div class="article-content-preview">
                     ${this.escapeHtml(article.content.substring(0, 200))}...
                 </div>
@@ -192,7 +221,7 @@ class KnowledgeBase {
                 option.textContent = ' '.repeat(level * 2) + category.name;
                 select.appendChild(option);
                 
-                if (category.children) {
+                if (category.children && category.children.length > 0) {
                     renderOptions(select, category.children, level + 1);
                 }
             });
@@ -208,6 +237,9 @@ class KnowledgeBase {
     async editArticle(articleId) {
         try {
             const response = await fetch(`/api/articles?id=${articleId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const article = await response.json();
             
             this.currentArticle = article;
@@ -242,34 +274,40 @@ class KnowledgeBase {
                 tags
             };
             
-            let response;
+            let url = '/api/articles';
+            let method = 'POST';
+            
             if (this.currentArticle) {
-                // 更新文章
-                response = await fetch(`/api/articles?id=${this.currentArticle.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(articleData)
-                });
-            } else {
-                // 创建文章
-                response = await fetch('/api/articles', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(articleData)
-                });
+                url += `?id=${this.currentArticle.id}`;
+                method = 'PUT';
             }
             
-            if (response.ok) {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(articleData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
                 this.hideEditor();
-                await this.loadArticles();
+                await this.loadArticles(this.currentCategory, this.currentTag);
                 await this.loadCategories();
                 await this.loadTags();
+                alert('保存成功！');
             } else {
-                throw new Error('保存失败');
+                throw new Error(result.error || '保存失败');
             }
         } catch (error) {
             console.error('保存文章失败:', error);
-            alert('保存文章失败');
+            alert('保存文章失败: ' + error.message);
         }
     }
     
@@ -283,29 +321,44 @@ class KnowledgeBase {
         }
         
         try {
-            const categoryData = { name, parent_id: parentId };
+            const categoryData = { 
+                name, 
+                parent_id: parentId ? parseInt(parentId) : null 
+            };
             
             const response = await fetch('/api/categories', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(categoryData)
             });
             
-            if (response.ok) {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
                 this.hideCategoryModal();
                 await this.loadCategories();
+                alert('分类创建成功！');
             } else {
-                throw new Error('保存失败');
+                throw new Error(result.error || '保存失败');
             }
         } catch (error) {
             console.error('保存分类失败:', error);
-            alert('保存分类失败');
+            alert('保存分类失败: ' + error.message);
         }
     }
     
     async exportData() {
         try {
             const response = await fetch('/api/export');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
             
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -319,7 +372,7 @@ class KnowledgeBase {
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error('导出失败:', error);
-            alert('导出数据失败');
+            alert('导出数据失败: ' + error.message);
         }
     }
     
@@ -331,27 +384,35 @@ class KnowledgeBase {
             const text = await file.text();
             const data = JSON.parse(text);
             
-            if (!confirm(`确定要导入数据吗？这将添加 ${data.articles.length} 篇文章、${data.categories.length} 个分类和 ${data.tags.length} 个标签。`)) {
+            if (!confirm(`确定要导入数据吗？这将添加 ${data.articles?.length || 0} 篇文章、${data.categories?.length || 0} 个分类和 ${data.tags?.length || 0} 个标签。`)) {
                 return;
             }
             
             const response = await fetch('/api/import', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(data)
             });
             
-            if (response.ok) {
-                alert('导入成功');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('导入成功！');
                 await this.loadCategories();
                 await this.loadTags();
                 await this.loadArticles();
             } else {
-                throw new Error('导入失败');
+                throw new Error(result.error || '导入失败');
             }
         } catch (error) {
             console.error('导入失败:', error);
-            alert('导入数据失败');
+            alert('导入数据失败: ' + error.message);
         } finally {
             event.target.value = '';
         }
@@ -365,17 +426,57 @@ class KnowledgeBase {
         
         // 简单的客户端搜索
         const articles = document.querySelectorAll('.article-item');
+        let found = false;
+        
         articles.forEach(article => {
             const title = article.querySelector('h3').textContent.toLowerCase();
             const content = article.querySelector('.article-content-preview').textContent.toLowerCase();
             const matches = title.includes(query.toLowerCase()) || content.includes(query.toLowerCase());
             article.style.display = matches ? 'block' : 'none';
+            if (matches) found = true;
         });
+        
+        if (!found) {
+            document.getElementById('articlesList').innerHTML = `
+                <div class="empty-state">
+                    <p>没有找到包含 "${query}" 的文章</p>
+                </div>
+            `;
+        }
+    }
+    
+    updateContentTitle(categoryId, tag) {
+        const titleElement = document.getElementById('contentTitle');
+        
+        if (categoryId) {
+            const category = this.findCategoryById(categoryId);
+            titleElement.textContent = category ? `分类: ${category.name}` : '分类文章';
+        } else if (tag) {
+            titleElement.textContent = `标签: ${tag}`;
+        } else {
+            titleElement.textContent = '所有文章';
+        }
+    }
+    
+    findCategoryById(id) {
+        const findInCategories = (categories, targetId) => {
+            for (const category of categories) {
+                if (category.id === targetId) return category;
+                if (category.children) {
+                    const found = findInCategories(category.children, targetId);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+        
+        return findInCategories(this.categories, parseInt(id));
     }
     
     showEditor() {
         document.getElementById('articlesList').style.display = 'none';
         document.getElementById('articleEditor').style.display = 'flex';
+        document.getElementById('contentTitle').textContent = this.currentArticle ? '编辑文章' : '新建文章';
         
         if (!this.currentArticle) {
             // 新建文章
@@ -390,6 +491,7 @@ class KnowledgeBase {
         document.getElementById('articlesList').style.display = 'block';
         document.getElementById('articleEditor').style.display = 'none';
         this.currentArticle = null;
+        this.updateContentTitle(this.currentCategory, this.currentTag);
     }
     
     showCategoryModal() {
@@ -409,11 +511,19 @@ class KnowledgeBase {
         
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+        
+        // 更新按钮文本
+        const button = document.getElementById('toggleDarkMode');
+        button.textContent = newTheme === 'dark' ? '切换浅色' : '切换深色';
     }
     
     applySavedTheme() {
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        // 更新按钮文本
+        const button = document.getElementById('toggleDarkMode');
+        button.textContent = savedTheme === 'dark' ? '切换浅色' : '切换深色';
     }
     
     highlightActiveCategory() {
@@ -431,9 +541,18 @@ class KnowledgeBase {
         document.querySelectorAll('.tag').forEach(tag => {
             tag.classList.remove('active');
         });
+        
+        if (this.currentTag) {
+            document.querySelectorAll('.tag').forEach(tag => {
+                if (tag.textContent.includes(this.currentTag)) {
+                    tag.classList.add('active');
+                }
+            });
+        }
     }
     
     escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -441,6 +560,7 @@ class KnowledgeBase {
 }
 
 // 初始化应用
+let knowledgeBase;
 document.addEventListener('DOMContentLoaded', () => {
-    new KnowledgeBase();
+    knowledgeBase = new KnowledgeBase();
 });
