@@ -91,6 +91,22 @@
             </div>
         </div>
     </div>
+    <!-- 在现有模态框后面添加 -->
+<div class="modal" id="editCategoryModal" style="display: none;">
+    <div class="modal-content">
+        <h3>编辑分类</h3>
+        <input type="hidden" id="editCategoryId">
+        <input type="text" id="editCategoryName" placeholder="分类名称">
+        <select id="editCategoryParent">
+            <option value="">无父分类（顶级分类）</option>
+        </select>
+        <div class="modal-actions">
+            <button class="btn-primary" id="updateCategoryBtn">更新</button>
+            <button class="btn-danger" id="deleteCategoryBtn">删除</button>
+            <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
+        </div>
+    </div>
+</div>
 
     <script src="app.js"></script>
 </body>
