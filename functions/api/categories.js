@@ -3,50 +3,34 @@ export async function onRequestGet(context) {
     const db = env.D1_DATABASE;
     
     try {
-        // 获取分类及其文章数量
+        // 获取所有分类和文章数量
         const categories = await db.prepare(`
-            WITH RECURSIVE category_tree AS (
-                SELECT 
-                    id, 
-                    name, 
-                    parent_id, 
-                    sort_order,
-                    0 as level
-                FROM categories 
-                WHERE parent_id IS NULL
-                
-                UNION ALL
-                
-                SELECT 
-                    c.id, 
-                    c.name, 
-                    c.parent_id, 
-                    c.sort_order,
-                    ct.level + 1 as level
-                FROM categories c
-                INNER JOIN category_tree ct ON c.parent_id = ct.id
-            )
             SELECT 
-                ct.*,
+                c.*,
                 COUNT(a.id) as article_count
-            FROM category_tree ct
-            LEFT JOIN articles a ON ct.id = a.category_id
-            GROUP BY ct.id, ct.name, ct.parent_id, ct.sort_order, ct.level
-            ORDER BY ct.sort_order, ct.name
+            FROM categories c
+            LEFT JOIN articles a ON c.id = a.category_id
+            GROUP BY c.id, c.name, c.parent_id, c.sort_order
+            ORDER BY c.sort_order, c.name
         `).all();
-        
+
         // 构建树形结构
-        const buildTree = (categories, parentId = null) => {
-            return categories
-                .filter(cat => cat.parent_id === parentId)
+        const buildTree = (parentId = null) => {
+            return categories.results
+                .filter(cat => {
+                    if (parentId === null) {
+                        return cat.parent_id === null;
+                    }
+                    return cat.parent_id === parentId;
+                })
                 .map(cat => ({
                     ...cat,
-                    children: buildTree(categories, cat.id)
+                    children: buildTree(cat.id)
                 }));
         };
         
-        const categoryTree = buildTree(categories);
-        
+        const categoryTree = buildTree();
+
         return new Response(JSON.stringify(categoryTree), {
             headers: { 
                 'Content-Type': 'application/json',
@@ -69,16 +53,30 @@ export async function onRequestPost(context) {
     try {
         const { name, parent_id } = await request.json();
         
-        if (!name) {
+        if (!name || name.trim() === '') {
             return new Response(JSON.stringify({ error: '分类名称不能为空' }), { 
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
         
+        // 检查父分类是否存在
+        if (parent_id) {
+            const parent = await db.prepare(
+                'SELECT id FROM categories WHERE id = ?'
+            ).bind(parent_id).first();
+            
+            if (!parent) {
+                return new Response(JSON.stringify({ error: '父分类不存在' }), { 
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+        }
+        
         const result = await db.prepare(
             'INSERT INTO categories (name, parent_id) VALUES (?, ?)'
-        ).bind(name, parent_id).run();
+        ).bind(name.trim(), parent_id).run();
         
         return new Response(JSON.stringify({ 
             success: true, 
