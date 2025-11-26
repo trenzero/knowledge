@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>个人知识库</title>
     
     <!-- 强制预加载和正确路径 -->
@@ -24,6 +24,9 @@
             --accent-color: #4f46e5;
             --accent-hover: #4338ca;
             --border-color: #404040;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
         }
         
         * {
@@ -77,10 +80,15 @@
             border-right: 1px solid var(--border-color);
             padding: 1.5rem;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
             position: fixed;
             height: 100vh;
             left: 0;
             top: 0;
+            z-index: 100;
+            transition: transform 0.3s ease-in-out;
         }
         
         .main-content {
@@ -89,6 +97,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: margin-left 0.3s ease-in-out;
         }
         
         .content-header {
@@ -97,12 +106,33 @@
             background: var(--bg-primary);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 90;
         }
         
         .articles-list {
             flex: 1;
             padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        /* 移动端菜单按钮 */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 110;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            justify-content: center;
+            align-items: center;
         }
         
         /* 基础组件样式 */
@@ -115,6 +145,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: background-color 0.2s;
+            font-size: 0.875rem;
         }
         
         .btn-primary:hover {
@@ -129,10 +160,27 @@
             border-radius: 0.5rem;
             cursor: pointer;
             transition: background-color 0.2s;
+            font-size: 0.875rem;
         }
         
         .btn-secondary:hover {
             background-color: var(--bg-secondary);
+        }
+        
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .btn-danger:hover {
+            background-color: #dc2626;
         }
         
         .category-item {
@@ -155,6 +203,68 @@
             color: white;
         }
         
+        .category-count {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+            min-width: 1.5rem;
+            text-align: center;
+        }
+        
+        .category-item.active .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .category-actions {
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .category-item:hover .category-actions {
+            opacity: 1;
+        }
+        
+        .btn-category-edit {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+        }
+        
+        .btn-category-edit:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            margin: 0.25rem;
+            background-color: var(--bg-tertiary);
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .tag.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
         .article-item {
             padding: 1.5rem;
             margin-bottom: 1rem;
@@ -170,27 +280,45 @@
             border-color: var(--accent-color);
         }
         
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: relative;
-                width: 100%;
-                height: auto;
-                max-height: 40vh;
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
-            
-            .app-container {
-                flex-direction: column;
-            }
+        .article-item h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .article-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .article-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .article-tag {
+            background-color: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+        }
+        
+        .article-content-preview {
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         /* 错误状态 */
         .error-message {
-            background-color: #ef4444;
+            background-color: var(--error-color);
             color: white;
             padding: 1rem;
             border-radius: 0.5rem;
@@ -202,6 +330,137 @@
             padding: 3rem;
             color: var(--text-secondary);
         }
+        
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            
+            .content-header {
+                padding-top: 5rem;
+            }
+            
+            .data-management {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            
+            .editor-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .editor-actions select,
+            .editor-actions input {
+                width: 100%;
+            }
+            
+            .modal-content {
+                margin: 1rem;
+                width: calc(100% - 2rem);
+            }
+            
+            /* 移动端分类和标签区域滚动 */
+            .categories-section {
+                max-height: 30vh;
+                overflow-y: auto;
+            }
+            
+            .tags-section {
+                max-height: 15vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* 平板设备 (768px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .main-content {
+                margin-left: 250px;
+            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
     </style>
 </head>
 <body>
@@ -212,9 +471,14 @@
         <p style="color: #b0b0b0; font-size: 0.9rem; margin-top: 0.5rem;" id="loadingStatus">初始化中</p>
     </div>
 
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        ☰
+    </button>
+
     <div class="app-container" style="display: none;" id="mainApp">
         <!-- 侧边栏 -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h1 style="margin-bottom: 1rem;">知识库</h1>
                 <button class="btn-primary" id="newArticleBtn" style="width: 100%;">新建文章</button>
@@ -300,15 +564,15 @@
         </div>
     </div>
 
-    <!-- 模态框 -->
-    <div class="modal" id="categoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px; border: 1px solid var(--border-color);">
-            <h3 id="categoryModalTitle" style="margin-bottom: 1rem;">新建分类</h3>
-            <input type="text" id="categoryName" placeholder="分类名称" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
-            <select id="categoryParent" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
+    <!-- 新建分类模态框 -->
+    <div class="modal" id="categoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="categoryModalTitle">新建分类</h3>
+            <input type="text" id="categoryName" placeholder="分类名称">
+            <select id="categoryParent">
                 <option value="">无父分类（顶级分类）</option>
             </select>
-            <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <div class="modal-actions">
                 <button class="btn-primary" id="saveCategoryBtn">保存</button>
                 <button class="btn-secondary" id="cancelCategoryBtn">取消</button>
             </div>
@@ -316,17 +580,17 @@
     </div>
 
     <!-- 编辑分类模态框 -->
-    <div class="modal" id="editCategoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-        <div class="modal-content" style="background: var(--bg-secondary); padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px; border: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 1rem;">编辑分类</h3>
+    <div class="modal" id="editCategoryModal" style="display: none;">
+        <div class="modal-content">
+            <h3>编辑分类</h3>
             <input type="hidden" id="editCategoryId">
-            <input type="text" id="editCategoryName" placeholder="分类名称" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
-            <select id="editCategoryParent" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-primary); color: var(--text-primary);">
+            <input type="text" id="editCategoryName" placeholder="分类名称">
+            <select id="editCategoryParent">
                 <option value="">无父分类（顶级分类）</option>
             </select>
-            <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <div class="modal-actions">
                 <button class="btn-primary" id="updateCategoryBtn">更新</button>
-                <button class="btn-danger" id="deleteCategoryBtn" style="background: #ef4444; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">删除</button>
+                <button class="btn-danger" id="deleteCategoryBtn">删除</button>
                 <button class="btn-secondary" id="cancelEditCategoryBtn">取消</button>
             </div>
         </div>
@@ -355,10 +619,67 @@
             }
         }
         
+        // 移动端菜单切换
+        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                this.textContent = '☰';
+            } else {
+                sidebar.classList.add('active');
+                this.textContent = '✕';
+            }
+        });
+        
+        // 点击主内容区关闭侧边栏（移动端）
+        document.querySelector('.main-content').addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const menuToggle = document.getElementById('mobileMenuToggle');
+                if (sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    menuToggle.textContent = '☰';
+                }
+            }
+        });
+        
+        // 窗口大小变化处理
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('mobileMenuToggle');
+            
+            if (window.innerWidth > 768) {
+                // 桌面端：确保侧边栏可见
+                sidebar.classList.remove('active');
+                menuToggle.style.display = 'none';
+            } else {
+                // 移动端：显示菜单按钮
+                menuToggle.style.display = 'flex';
+            }
+        });
+        
+        // 初始化窗口大小状态
+        if (window.innerWidth <= 768) {
+            document.getElementById('mobileMenuToggle').style.display = 'flex';
+        }
+        
         // 全局错误处理
         window.addEventListener('error', function(e) {
             console.error('全局错误:', e.error);
             updateLoadingStatus('加载失败: ' + (e.error ? e.error.message : '未知错误'));
+            
+            // 显示友好的错误信息
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.innerHTML = `
+                    <div style="text-align: center; color: #ef4444;">
+                        <h3>加载失败</h3>
+                        <p>${e.error && e.error.message ? e.error.message : '未知错误'}</p>
+                        <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem;">重新加载</button>
+                        <button onclick="location.href='/check-setup.html'" style="background: #6b7280; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem; margin-left: 0.5rem;">系统检查</button>
+                    </div>
+                `;
+            }
         });
     </script>
 
