@@ -12,6 +12,10 @@ class KnowledgeBase {
         this.debounceTimers = new Map();
         this.intersectionObserver = null;
         
+        // 移动端状态
+        this.isMobile = window.innerWidth <= 768;
+        this.sidebarOpen = false;
+        
         console.log('KnowledgeBase 构造函数调用');
         
         // 延迟初始化，确保DOM完全加载
@@ -35,6 +39,9 @@ class KnowledgeBase {
             // 初始化懒加载观察器
             this.initLazyLoading();
             
+            // 绑定移动端事件
+            this.bindMobileEvents();
+            
             // 检查PWA支持
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js')
@@ -56,6 +63,9 @@ class KnowledgeBase {
             
             // 应用保存的主题
             this.applySavedTheme();
+            
+            // 隐藏加载状态，显示应用
+            this.showApp();
             
         } catch (error) {
             console.error('初始化过程中出错:', error);
@@ -79,6 +89,19 @@ class KnowledgeBase {
         }
         
         return true;
+    }
+    
+    showApp() {
+        const loadingState = document.getElementById('loadingState');
+        const mainApp = document.getElementById('mainApp');
+        
+        if (loadingState) loadingState.style.display = 'none';
+        if (mainApp) {
+            mainApp.style.display = 'flex';
+            // 触发重绘以确保过渡效果
+            mainApp.offsetHeight;
+            mainApp.style.opacity = '1';
+        }
     }
     
     showGlobalError(message) {
@@ -118,6 +141,95 @@ class KnowledgeBase {
                 rootMargin: '50px 0px',
                 threshold: 0.1
             });
+        }
+    }
+    
+    bindMobileEvents() {
+        // 移动端菜单切换
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', () => this.toggleSidebar());
+        }
+        
+        // 窗口大小变化检测
+        window.addEventListener('resize', () => this.handleResize());
+        
+        // 点击主内容区关闭侧边栏（移动端）
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent && this.isMobile) {
+            mainContent.addEventListener('click', () => {
+                if (this.sidebarOpen) {
+                    this.hideSidebar();
+                }
+            });
+        }
+        
+        // 初始化移动端状态
+        this.handleResize();
+    }
+    
+    handleResize() {
+        const wasMobile = this.isMobile;
+        this.isMobile = window.innerWidth <= 768;
+        
+        // 显示/隐藏移动端菜单按钮
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        if (mobileToggle) {
+            mobileToggle.style.display = this.isMobile ? 'block' : 'none';
+        }
+        
+        // 如果从桌面端切换到移动端，关闭侧边栏
+        if (!wasMobile && this.isMobile && this.sidebarOpen) {
+            this.hideSidebar();
+        }
+        
+        // 如果从移动端切换到桌面端，确保侧边栏可见
+        if (wasMobile && !this.isMobile) {
+            this.showSidebarDesktop();
+        }
+    }
+    
+    toggleSidebar() {
+        if (this.sidebarOpen) {
+            this.hideSidebar();
+        } else {
+            this.showSidebar();
+        }
+    }
+    
+    showSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        
+        if (sidebar) {
+            sidebar.classList.add('active');
+            this.sidebarOpen = true;
+        }
+        
+        if (mobileToggle) {
+            mobileToggle.textContent = '✕';
+        }
+    }
+    
+    hideSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        
+        if (sidebar) {
+            sidebar.classList.remove('active');
+            this.sidebarOpen = false;
+        }
+        
+        if (mobileToggle) {
+            mobileToggle.textContent = '☰';
+        }
+    }
+    
+    showSidebarDesktop() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('active');
+            this.sidebarOpen = false;
         }
     }
     
@@ -163,6 +275,36 @@ class KnowledgeBase {
             clearTimeout(this.debounceTimers.get(func));
             this.debounceTimers.set(func, setTimeout(() => func.apply(this, args), wait));
         };
+    }
+    
+    // 缓存数据函数
+    async cachedFetch(url, options = {}, cacheKey = url, ttl = 60000) {
+        const now = Date.now();
+        const cached = this.cache.get(cacheKey);
+        
+        if (cached && (now - cached.timestamp < ttl)) {
+            return cached.data;
+        }
+        
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            
+            this.cache.set(cacheKey, {
+                data,
+                timestamp: now
+            });
+            
+            return data;
+        } catch (error) {
+            // 如果网络请求失败但缓存中有数据，使用缓存数据
+            if (cached) {
+                console.warn('Using cached data due to network error:', error);
+                return cached.data;
+            }
+            throw error;
+        }
     }
     
     async loadCategories() {
@@ -403,6 +545,11 @@ class KnowledgeBase {
                 this.currentTag = null;
                 this.loadArticles(category.id);
                 this.highlightActiveCategory();
+                
+                // 移动端点击分类后自动关闭侧边栏
+                if (this.isMobile) {
+                    this.hideSidebar();
+                }
             });
             
             container.appendChild(div);
@@ -440,6 +587,11 @@ class KnowledgeBase {
                 this.currentCategory = null;
                 this.loadArticles(null, tag.name);
                 this.highlightActiveTag();
+                
+                // 移动端点击标签后自动关闭侧边栏
+                if (this.isMobile) {
+                    this.hideSidebar();
+                }
             });
             
             container.appendChild(span);
@@ -640,6 +792,11 @@ class KnowledgeBase {
                 this.hideCategoryModal();
                 await this.loadCategories();
                 this.showSuccess('分类创建成功！');
+                
+                // 移动端创建分类后自动关闭侧边栏
+                if (this.isMobile) {
+                    this.hideSidebar();
+                }
             } else {
                 throw new Error(result.error || '保存失败');
             }
@@ -1010,3 +1167,21 @@ if (document.readyState === 'loading') {
     console.log('DOM已加载，直接初始化KnowledgeBase');
     knowledgeBase = new KnowledgeBase();
 }
+
+// 全局错误处理
+window.addEventListener('error', function(e) {
+    console.error('全局错误:', e.error);
+    
+    // 显示友好的错误信息
+    const loadingState = document.getElementById('loadingState');
+    if (loadingState) {
+        loadingState.innerHTML = `
+            <div style="text-align: center; color: #ef4444;">
+                <h3>加载失败</h3>
+                <p>${e.error && e.error.message ? e.error.message : '未知错误'}</p>
+                <button onclick="window.location.reload()" style="background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem;">重新加载</button>
+                <button onclick="location.href='/check-setup.html'" style="background: #6b7280; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-top: 1rem; margin-left: 0.5rem;">系统检查</button>
+            </div>
+        `;
+    }
+});
