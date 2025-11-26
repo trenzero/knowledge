@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>数据库检查</title>
+    <style>
+        body { font-family: system-ui; padding: 2rem; background: #1a1a1a; color: white; }
+        button { background: #4f46e5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin: 0.5rem; }
+        pre { background: #2d2d2d; padding: 1rem; border-radius: 0.5rem; overflow: auto; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>数据库状态检查</h1>
+    
+    <button onclick="checkTables()">检查数据表</button>
+    <button onclick="initDatabase()">初始化数据库</button>
+    <button onclick="addSampleData()">添加示例数据</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function checkTables() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>检查数据表...</p>';
+            
+            try {
+                // 检查分类表
+                const categoriesResponse = await fetch('/api/categories');
+                const categories = await categoriesResponse.json();
+                
+                let html = '<h3>数据表状态:</h3>';
+                
+                if (Array.isArray(categories)) {
+                    html += `<p class="success">✅ 分类表正常 (${categories.length} 个分类)</p>`;
+                } else {
+                    html += `<p class="error">❌ 分类表异常: ${categories.error || '未知错误'}</p>`;
+                }
+                
+                // 检查文章表
+                try {
+                    const articlesResponse = await fetch('/api/articles');
+                    const articles = await articlesResponse.json();
+                    html += `<p class="success">✅ 文章表正常 (${Array.isArray(articles) ? articles.length : 0} 篇文章)</p>`;
+                } catch (e) {
+                    html += `<p class="error">❌ 文章表异常: ${e.message}</p>`;
+                }
+                
+                results.innerHTML += html;
+            } catch (error) {
+                results.innerHTML += `<p class="error">检查失败: ${error.message}</p>`;
+            }
+        }
+
+        async function initDatabase() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>初始化数据库...</p>';
+            
+            const sql = `
+                -- 创建分类表（支持多级）
+                CREATE TABLE IF NOT EXISTS categories (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT NOT NULL,
+                  parent_id INTEGER,
+                  sort_order INTEGER DEFAULT 0,
+                  FOREIGN KEY (parent_id) REFERENCES categories (id)
+                );
+
+                -- 创建文章表
+                CREATE TABLE IF NOT EXISTS articles (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  title TEXT NOT NULL,
+                  content TEXT NOT NULL,
+                  category_id INTEGER NOT NULL,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (category_id) REFERENCES categories (id)
+                );
+
+                -- 创建标签表
+                CREATE TABLE IF NOT EXISTS tags (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT NOT NULL UNIQUE
+                );
+
+                -- 创建文章-标签关联表
+                CREATE TABLE IF NOT EXISTS article_tags (
+                  article_id INTEGER,
+                  tag_id INTEGER,
+                  PRIMARY KEY (article_id, tag_id),
+                  FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
+                  FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
+                );
+            `;
+            
+            try {
+                // 这里需要一个执行SQL的API端点
+                const response = await fetch('/api/execute-sql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sql })
+                });
+                
+                if (response.ok) {
+                    results.innerHTML += '<p class="success">✅ 数据库初始化成功</p>';
+                } else {
+                    const error = await response.json();
+                    results.innerHTML += `<p class="error">❌ 初始化失败: ${error.error || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<p class="error">❌ 初始化失败: ${error.message}</p>`;
+                results.innerHTML += `
+                    <p>请手动在Cloudflare D1数据库中执行以下SQL:</p>
+                    <pre>${sql}</pre>
+                `;
+            }
+        }
+
+        async function addSampleData() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>添加示例数据...</p>';
+            
+            const sampleData = {
+                categories: [
+                    { name: '技术文档', parent_id: null, sort_order: 1 },
+                    { name: '学习笔记', parent_id: null, sort_order: 2 },
+                    { name: '前端开发', parent_id: 1, sort_order: 1 },
+                    { name: '后端开发', parent_id: 1, sort_order: 2 }
+                ]
+            };
+            
+            try {
+                for (const category of sampleData.categories) {
+                    const response = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(category)
+                    });
+                    
+                    if (response.ok) {
+                        results.innerHTML += `<p class="success">✅ 添加分类: ${category.name}</p>`;
+                    } else {
+                        const error = await response.json();
+                        results.innerHTML += `<p class="error">❌ 添加分类失败 ${category.name}: ${error.error}</p>`;
+                    }
+                }
+                
+                results.innerHTML += '<p class="success">🎉 示例数据添加完成</p>';
+            } catch (error) {
+                results.innerHTML += `<p class="error">❌ 添加示例数据失败: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
